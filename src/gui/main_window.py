@@ -4,8 +4,11 @@ import qdarkstyle
 from utils.constants import VERSION
 
 
-
 class ProofVerificationGUI(QMainWindow):
+    """
+   Initializes the ProofVerificationGUI.
+   Currently defaulted to dark-mode.
+   """
     def __init__(self, api):
         super().__init__()
         self.statement_input = self.dark_mode_action = self.result_display = self.proof_display = self.verify_button = self.central_widget = None
@@ -15,6 +18,9 @@ class ProofVerificationGUI(QMainWindow):
         self.toggle_dark_mode(True)
 
     def init_ui(self):
+        """
+        Initializes the user interface of the proof verification GUI.
+        """
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         layout = QVBoxLayout(self.central_widget)
@@ -41,6 +47,9 @@ class ProofVerificationGUI(QMainWindow):
         self.setGeometry(100, 100, 600, 500)
 
     def create_menu_bar(self):
+        """
+        Creates the menu bar with options for dark mode and displaying version information.
+        """
         menu_bar = self.menuBar()
         # View Menu
         view_menu = menu_bar.addMenu("View")
@@ -55,16 +64,27 @@ class ProofVerificationGUI(QMainWindow):
         about_menu.addAction(version_action)
 
     def on_verify(self):
+        """
+        Handles the click event for the verify button.
+        Retrieves the mathematical statement from the input field and triggers
+        the proof generation and verification process using the provided API.
+        """
         statement = self.statement_input.toPlainText()
         self.api.generate_and_verify_proof(statement)
 
     @pyqtSlot(bool, str, str)
     def display_result(self, is_valid, proof, feedback):
+        """
+        Displays the verification result and generated proof in the respective fields.
+        """
         self.proof_display.setPlainText(f"The Proof:\n\n{proof}")
         result = "Proof is valid." if is_valid else "Proof is invalid."
         self.result_display.setPlainText(f"Verification Result:\n{result}\n\nFeedback:\n{feedback}")
 
     def toggle_dark_mode(self, state):
+        """
+        Toggles the dark mode theme for the application.
+        """
         app = QApplication.instance()  # Get the existing QApplication instance
         if state:
             app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
@@ -72,4 +92,7 @@ class ProofVerificationGUI(QMainWindow):
             app.setStyleSheet("")
 
     def show_version(self):
+        """
+        Displays the version information in a message box.
+        """
         QMessageBox.information(self, "Version", f"Proof Verification System\nVersion: {VERSION}")

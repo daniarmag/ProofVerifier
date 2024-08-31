@@ -4,6 +4,9 @@ from api.proof_verification_api import ProofVerificationAPI
 from gui.main_window import ProofVerificationGUI
 
 if __name__ == '__main__':
+    """
+    Activate the system
+    """
     app = QApplication(sys.argv)
     api = ProofVerificationAPI()
     gui = ProofVerificationGUI(api)

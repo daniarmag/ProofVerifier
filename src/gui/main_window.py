@@ -32,6 +32,10 @@ class ProofVerificationGUI(QMainWindow):
         layout.addWidget(self.statement_input)
         self.verify_button = QPushButton("Generate and Verify Proof")
         self.verify_button.clicked.connect(self.on_verify)
+        #
+        # ENABLE THIS BUTTON WHEN API IS READY
+        #
+        self.verify_button.setEnabled(False)
         layout.addWidget(self.verify_button)
         # Proof Display Section
         layout.addWidget(QLabel("Generated Proof:"))
@@ -43,7 +47,7 @@ class ProofVerificationGUI(QMainWindow):
         self.result_display = QTextEdit()
         self.result_display.setReadOnly(True)
         layout.addWidget(self.result_display)
-        self.setWindowTitle("Proof Verification System")
+        self.setWindowTitle("Proof Verifier")
         self.setGeometry(100, 100, 600, 500)
 
     def create_menu_bar(self):

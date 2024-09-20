@@ -1,3 +1,5 @@
+**Project Status: WIP**
+
 **Abstract**
 
 Recent advancements in artificial intelligence, particularly large language models (LLMs) such as ChatGPT, have demonstrated their capacity to generate mathematical proofs with remarkable skill. Nevertheless, ChatGPT is not yet capable of verifying the accuracy of its proofs, which presents a major obstacle to their integration into formal mathematical studies [2,5]. In order to solve this problem, this project aims to create an interactive proof verification system that makes use of the ideas behind Vladimir Voevodsky's Homotopy type theory [4] and Per Martin-Löf's intuitionistic type theory [3]. Our suggested method builds a framework in which the correctness of proofs produced by ChatGPT may be verified using a formal proof language, Agda [9]. The system features an API that lets ChatGPT and the formal proof environment interact, ensuring that proofs are both generated and validated. This integration aims to enhance the reliability of AI-assisted mathematical proofs, and by that accelerating mathematical research and improving the overall trustworthiness of AI-generated results.

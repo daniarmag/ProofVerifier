@@ -8,7 +8,7 @@ class ProofVerificationAPI(QObject):
     The ProofVerificationAPI class is responsible for generating and verifying
     mathematical proofs using OpenAI's ChatGPT and Agda.
     """
-    proof_result = pyqtSignal(bool, str, str)
+    proof_result = pyqtSignal(bool, str, str)#Test
 
     def __init__(self):
         super().__init__()

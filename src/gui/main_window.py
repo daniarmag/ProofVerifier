@@ -35,7 +35,7 @@ class ProofVerificationGUI(QMainWindow):
         #
         # ENABLE THIS BUTTON WHEN API IS READY
         #
-        self.verify_button.setEnabled(False)
+        # self.verify_button.setEnabled(False)
         layout.addWidget(self.verify_button)
         # Proof Display Section
         layout.addWidget(QLabel("Generated Proof:"))

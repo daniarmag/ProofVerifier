@@ -1,11 +1,14 @@
 import subprocess
+import os
 
 def run_command(cmd: str, output: bool = False) -> tuple[bool, any]:
+    agda_bin_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Agda", "bin")
+    os.environ['PATH'] = agda_bin_dir + os.pathsep + os.environ['PATH']
     try:
         if not output:
-            p = subprocess.run([cmd], shell=True, capture_output=False, stdout=subprocess.DEVNULL)
+            p = subprocess.run(cmd, shell=True, capture_output=False, stdout=subprocess.DEVNULL)
         else:
-            p = subprocess.run([cmd], shell=True, text=True, capture_output=True)
-        return True, str(p.stdout)
+            p = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+        return int(p.returncode) , str(p.stdout)
     except subprocess.CalledProcessError as e:
-        return False, e
+        return -1, e

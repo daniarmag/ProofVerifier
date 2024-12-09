@@ -19,16 +19,16 @@ class ProofWorker(QObject):
         Runs the iterative proof generation and verification process.
         """
         proof = self.api.generate_proof_with_chatgpt(self.statement)
-        is_valid, feedback = self.api.verify_with_agda(proof)
+        is_valid, feedback, proof = self.api.verify_with_agda(proof)
         self.progress_update.emit(f"Iteration {self.refinements + 1}: Initial proof verification {'passed' if is_valid else 'failed'}.")
-
+        self.proof_result.emit(is_valid, proof, "Initial proof attempt:\n" + feedback)
         while not is_valid and self.refinements < constants.ITERATIONS_LIMIT:
             self.refinements += 1
             self.progress_update.emit(f"Iteration {self.refinements}: Refining proof...")
             proof = self.api.refine_proof_with_chatgpt(self.statement, proof, feedback)
-            is_valid, feedback = self.api.verify_with_agda(proof)
+            is_valid, feedback, proof = self.api.verify_with_agda(proof)
+            self.proof_result.emit(is_valid, proof, f"Iteration {self.refinements} Feedback:\n" + feedback)
             self.progress_update.emit(f"Iteration {self.refinements}: Proof verification {'passed' if is_valid else 'failed'}.")
 
-        if not is_valid:
-            feedback = "Reached the iteration limit without finding a valid proof."
+        feedback = "Reached the iteration limit without finding a valid proof." if not is_valid else "Valid proof found."
         self.proof_result.emit(is_valid, self.api.clean_agda_code(proof), feedback)

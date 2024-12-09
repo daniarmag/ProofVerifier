@@ -2,7 +2,7 @@ import subprocess
 import openai
 import re
 from utils import common, constants
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread
 from api.proof_worker import ProofWorker
 
 class ProofVerificationAPI(QObject):
@@ -15,7 +15,7 @@ class ProofVerificationAPI(QObject):
 
     def __init__(self):
         super().__init__()
-        self.worker = None
+        self.thread, self.worker = None, None
 
 
     @pyqtSlot(str)
@@ -24,18 +24,25 @@ class ProofVerificationAPI(QObject):
         Generates a proof for the given mathematical statement and verifies it using Agda.
         If the proof is invalid, it refines the proof iteratively until a valid one is found.
         """
+        self.thread = QThread()
         self.worker = ProofWorker(self, statement)
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run)
+        self.thread.started.connect(self.worker.run)
         self.worker.proof_result.connect(self.proof_result.emit)
         self.worker.progress_update.connect(self.progress_update.emit)
-        self.worker.run()
-
+        self.worker.proof_result.connect(self.thread.quit)  # Quit the thread when done
+        self.worker.proof_result.connect(self.worker.deleteLater)  # Clean up the worker
+        self.thread.finished.connect(self.thread.deleteLater)  # Clean up the thread
+        self.thread.start()
 
     def generate_proof_with_chatgpt(self, statement):
         """
         Generates a formal proof in Agda using ChatGPT for the given statement.
         """
         prompt = (f"Generate a formal proof in Agda for the following statement: "
-                  f"'{statement}'. \n Only output the Agda code. Do not use libraries. Do not include comments, explanations, or any additional text.")
+                  f"'{statement}'. \n Only output the Agda code. Do not use libraries."
+                  f" Do not include comments, explanations, or any additional text. Module name is temp_proof")
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -56,7 +63,7 @@ class ProofVerificationAPI(QObject):
         # Run Agda type-checker
         exit_code, feedback = common.run_command("agda temp_proof.agda", True)
         is_valid = True if exit_code == 0 else False
-        return is_valid, feedback
+        return is_valid, feedback, proof
 
     def refine_proof_with_chatgpt(self, statement, previous_proof, feedback):
         """
@@ -64,15 +71,11 @@ class ProofVerificationAPI(QObject):
         """
         prompt = f"""
         Refine the following Agda proof for the statement: '{statement}'
-        Only provide the Agda code—no explanations or additional text.
-
-        Previous proof:
-        {previous_proof}
-
+        Only provide the Agda code, no explanations or additional text.
+        Module name is temp_proof
         Agda feedback:
         {feedback}
-
-        Provide an improved Agda proof.
+        Provide a fix based on the feedback.
         """
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
@@ -89,14 +92,10 @@ class ProofVerificationAPI(QObject):
         - Markdown code block formatting (backticks)
         - Any module declaration
         - Comments (starting with '--')
+        - Characters not supported by UTF-8
         """
-        # Remove Markdown code block formatting (```)
         clean_code = raw_code.replace("```agda", "").replace("```", "").strip()
-
-        # Remove module declaration (if any) and anything before the first piece of Agda code
         clean_code = re.sub(r'.*(?=data|module)', '', clean_code, flags=re.DOTALL).strip()
-
-        # Remove comments (lines starting with '--')
         clean_code = re.sub(r'--.*\n', '', clean_code)
-
+        clean_code = clean_code.encode("utf-8", "ignore").decode("utf-8")
         return clean_code

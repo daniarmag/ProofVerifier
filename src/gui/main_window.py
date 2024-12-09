@@ -18,6 +18,8 @@ class ProofVerificationGUI(QMainWindow):
         self.init_ui()
         self.dark_mode_action.setChecked(True)
         self.toggle_dark_mode(True)
+        self.api.progress_update.connect(self.update_progress)
+        self.api.proof_result.connect(self.display_result)
 
     def init_ui(self):
         """
@@ -52,6 +54,13 @@ class ProofVerificationGUI(QMainWindow):
         self.setWindowTitle("Proof Verifier")
         self.setGeometry(100, 100, 600, 500)
 
+    @pyqtSlot(str)
+    def update_progress(self, message):
+        """
+        Updates the progress of the proof generation and verification process.
+        """
+        self.result_display.append(message)
+
     def create_menu_bar(self):
         """
         Creates the menu bar with options for dark mode and displaying version information.
@@ -75,6 +84,8 @@ class ProofVerificationGUI(QMainWindow):
         Retrieves the mathematical statement from the input field and triggers
         the proof generation and verification process using the provided API.
         """
+        self.result_display.clear()
+        self.proof_display.clear()
         statement = self.statement_input.toPlainText()
         self.api.generate_and_verify_proof(statement)
 
@@ -83,7 +94,9 @@ class ProofVerificationGUI(QMainWindow):
         """
         Displays the verification result and generated proof in the respective fields.
         """
-        self.proof_display.setPlainText(f"{proof}")
+        current_text = self.proof_display.toPlainText()
+        updated_text = f"{current_text}\n\n{proof.strip()}"
+        self.proof_display.setPlainText(f"{updated_text}")
         result = "Proof is valid." if is_valid else "Proof is invalid."
         self.result_display.setPlainText(f"{result}\n\nFeedback:\n{feedback}")
 

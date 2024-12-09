@@ -1,20 +1,10 @@
-data Nat : Set where
-  zero : Nat
-  suc  : Nat → Nat
+module temp_proof where
 
-plus : Nat → Nat → Nat
-plus zero     n = n
-plus (suc m) n = suc (plus m n)
+open import Data.Nat
+open import Data.Nat.Properties
 
-plus-comm : (a b : Nat) → plus a b ≡ plus b a
-plus-comm zero     b = refl
-plus-comm (suc a) b = begin
-  plus (suc a) b
-  ≡⟨⟩
-  suc (plus a b)
-  ≡⟨ plus-comm a b ⟩
-  suc (plus b a)
-  ≡⟨⟩
-  plus b (suc a)
-  ≡⟨⟩
-  refl
+two : ℕ
+two = 1 + 1
+
+proof : two ≡ 2
+proof = refl

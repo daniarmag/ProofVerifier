@@ -1,7 +1,9 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel, QMainWindow, QAction, QMessageBox, QApplication
 from PyQt5.QtCore import pyqtSlot
-import qdarkstyle
 from utils.constants import VERSION
+from api.proof_worker import ProofWorker
+import qdarkstyle
+
 
 
 class ProofVerificationGUI(QMainWindow):
@@ -81,9 +83,9 @@ class ProofVerificationGUI(QMainWindow):
         """
         Displays the verification result and generated proof in the respective fields.
         """
-        self.proof_display.setPlainText(f"The Proof:\n\n{proof}")
+        self.proof_display.setPlainText(f"{proof}")
         result = "Proof is valid." if is_valid else "Proof is invalid."
-        self.result_display.setPlainText(f"Verification Result:\n{result}\n\nFeedback:\n{feedback}")
+        self.result_display.setPlainText(f"{result}\n\nFeedback:\n{feedback}")
 
     def toggle_dark_mode(self, state):
         """

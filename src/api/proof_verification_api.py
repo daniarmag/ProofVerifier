@@ -1,8 +1,9 @@
 import subprocess
 import openai
 import re
-from utils import common
+from utils import common, constants
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from api.proof_worker import ProofWorker
 
 class ProofVerificationAPI(QObject):
     """
@@ -10,10 +11,12 @@ class ProofVerificationAPI(QObject):
     mathematical proofs using OpenAI's ChatGPT and Agda.
     """
     proof_result = pyqtSignal(bool, str, str)
-    ITERATIONS, ITERATIONS_LIMIT = 0, 5
+    progress_update = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
+        self.worker = None
+
 
     @pyqtSlot(str)
     def generate_and_verify_proof(self, statement):
@@ -21,18 +24,11 @@ class ProofVerificationAPI(QObject):
         Generates a proof for the given mathematical statement and verifies it using Agda.
         If the proof is invalid, it refines the proof iteratively until a valid one is found.
         """
-        proof = self.generate_proof_with_chatgpt(statement)
-        is_valid, feedback = self.verify_with_agda(proof)
-        self.proof_result.emit(is_valid, proof, feedback)
-        while not is_valid or self.ITERATIONS < self.ITERATIONS_LIMIT:
-            if self.ITERATIONS == self.ITERATIONS_LIMIT:
-                is_valid = False
-                feedback = "Could not reach to a verified proof."
-                break
-            proof = self.refine_proof_with_chatgpt(statement, proof, feedback)
-            is_valid, feedback = self.verify_with_agda(proof)
-            self.ITERATIONS += 1
-        self.proof_result.emit(is_valid, proof, feedback)
+        self.worker = ProofWorker(self, statement)
+        self.worker.proof_result.connect(self.proof_result.emit)
+        self.worker.progress_update.connect(self.progress_update.emit)
+        self.worker.run()
+
 
     def generate_proof_with_chatgpt(self, statement):
         """

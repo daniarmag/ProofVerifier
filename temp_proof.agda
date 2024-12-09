@@ -2,25 +2,19 @@ data Nat : Set where
   zero : Nat
   suc  : Nat → Nat
 
-one : Nat
-one = suc zero
+plus : Nat → Nat → Nat
+plus zero     n = n
+plus (suc m) n = suc (plus m n)
 
-two : Nat
-two = suc one
-
-add : Nat → Nat → Nat
-add zero      m = m
-add (suc n) m = suc (add n m)
-
-onePlusOneIsTwo : add one one ≡ two
-onePlusOneIsTwo = begin
-  add one one
-  ≡⟨ refl ⟩
-  add (suc zero) one
-  ≡⟨ refl ⟩
-  suc (add zero one)
-  ≡⟨ refl ⟩
-  suc one
-  ≡⟨ refl ⟩
-  two
-  ∎
+plus-comm : (a b : Nat) → plus a b ≡ plus b a
+plus-comm zero     b = refl
+plus-comm (suc a) b = begin
+  plus (suc a) b
+  ≡⟨⟩
+  suc (plus a b)
+  ≡⟨ plus-comm a b ⟩
+  suc (plus b a)
+  ≡⟨⟩
+  plus b (suc a)
+  ≡⟨⟩
+  refl

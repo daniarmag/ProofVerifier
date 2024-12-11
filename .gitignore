@@ -2,3 +2,5 @@ __pycache__/
 *.exe
 *.tar
 *.gz
+Agda/store/ghc-9.4.8/Agda-2.6.4.3-228a0e641aebbe910ac572bd23a626c2812906c1/bin/agda.exe
+Agda/store/ghc-9.4.8/Agda-2.6.4.3-228a0e641aebbe910ac572bd23a626c2812906c1/lib/libHSAgda-2.6.4.3-228a0e641aebbe910ac572bd23a626c2812906c1.a

@@ -1,10 +1,17 @@
-module temp_proof where
+data Nat : Set where
+  zero : Nat
+  suc  : Nat → Nat
 
-open import Data.Nat
-open import Data.Nat.Properties
+one : Nat
+one = suc zero
 
-two : ℕ
-two = 1 + 1
+two : Nat
+two = suc one
 
-proof : two ≡ 2
-proof = refl
+_>_ : Nat → Nat → Set
+zero > n = ⊥
+suc m > zero = ⊤
+suc m > suc n = m > n
+
+one_gt_zero : one > zero
+one_gt_zero = λ () → ()

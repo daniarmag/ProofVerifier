@@ -1,17 +1,14 @@
-data Nat : Set where
-  zero : Nat
-  suc  : Nat → Nat
+data ℕ : Set where
+  zero : ℕ
+  suc  : ℕ → ℕ
 
-one : Nat
-one = suc zero
+_+_ : ℕ → ℕ → ℕ
+zero + n = n
+suc m + n = suc (m + n)
 
-two : Nat
-two = suc one
+cong : ∀ {A B : Set} {x y : A} (f : A → B) → x ≡ y → f x ≡ f y
+cong f refl = refl
 
-_>_ : Nat → Nat → Set
-zero > n = ⊥
-suc m > zero = ⊤
-suc m > suc n = m > n
-
-one_gt_zero : one > zero
-one_gt_zero = λ () → ()
+comm+ : ∀ (a b : ℕ) → a + b ≡ b + a
+comm+ zero n = refl
+comm+ (suc m) n = cong suc (comm+ m n)

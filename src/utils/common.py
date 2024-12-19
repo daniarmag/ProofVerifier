@@ -1,7 +1,7 @@
 import subprocess
 import os
 
-def run_command(cmd: str, output: bool = False) -> tuple[bool, any]:
+def run_command(cmd: str, output: bool = False) -> tuple[int, any]:
     agda_bin_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Agda", "bin")
     os.environ['PATH'] = agda_bin_dir + os.pathsep + os.environ['PATH']
     try:

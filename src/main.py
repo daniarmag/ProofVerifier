@@ -10,6 +10,5 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     api = ProofVerificationAPI()
     gui = ProofVerificationGUI(api)
-    api.proof_result.connect(gui.display_result)
     gui.show()
     sys.exit(app.exec_())

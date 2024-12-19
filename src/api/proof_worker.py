@@ -26,7 +26,6 @@ class ProofWorker(QObject):
         if is_valid:
             self.status_update.emit("Inactive")
             return
-
         while not is_valid and self.refinements < constants.ITERATIONS_LIMIT:
             self.refinements += 1
             proof = self.api.refine_proof_with_chatgpt(self.statement, proof, feedback)

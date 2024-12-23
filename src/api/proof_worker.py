@@ -36,3 +36,4 @@ class ProofWorker(QObject):
         feedback = "Reached the iteration limit without finding a valid proof." if not is_valid else "Valid proof found."
         self.proof_result.emit(is_valid, self.api.clean_agda_code(proof), feedback)
         self.status_update.emit("Inactive")
+

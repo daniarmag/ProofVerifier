@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel, QMainWindow, QAction, QMessageBox, QApplication, QTabWidget, QHBoxLayout
-from PyQt5.QtCore import pyqtSlot, QMetaObject, Qt, Q_ARG
-from utils.constants import VERSION
+from PyQt5.QtCore import pyqtSlot, QMetaObject, Qt, Q_ARG, QSize
+from PyQt5.QtGui import QIcon
+from utils.constants import VERSION, ITERATIONS_LIMIT
 from api.proof_worker import ProofWorker
 import qdarkstyle
 import re
@@ -16,10 +17,12 @@ class ProofVerificationGUI(QMainWindow):
     def __init__(self, api):
         super().__init__()
         self.status_label = self.iteration_label = self.latest_result_display = self.latest_proof_display = self.latest_tab = self.tabs =\
-            self.statement_input = self.dark_mode_action = self.result_display = self.proof_display = self.verify_button = self.central_widget = None
+            self.statement_input = self.dark_mode_action = self.result_display = self.proof_display = self.central_widget = None
+        self.verify_button = self.play_button = self.stop_button = self.pause_button = None
         self.api = api
         self.iteration_count = 0
         self.status = "Inactive"
+        self.is_paused = False
         self.init_ui()
         self.dark_mode_action.setChecked(True)
         self.toggle_dark_mode(True)
@@ -34,18 +37,52 @@ class ProofVerificationGUI(QMainWindow):
         """
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-        layout = QVBoxLayout(self.central_widget)
+        main_layout = QVBoxLayout(self.central_widget)
         self.create_menu_bar()
 
         # Statement Input Section
-        layout.addWidget(QLabel("Mathematical Statement:"))
+        top_row_layout = QHBoxLayout()
+        top_row_layout.addWidget(QLabel("Mathematical Statement:"))
+        button_layout = QHBoxLayout()
+        self.verify_button = QPushButton()
+        self.verify_button.setIcon(QIcon("img/verify.png"))
+        self.verify_button.setIconSize(QSize(24, 24))
+        self.verify_button.setFixedSize(40, 40)
+        self.verify_button.setToolTip("Start Verification Process")
+        self.verify_button.clicked.connect(self.on_verify)
+        self.play_button = QPushButton()
+        self.play_button.setEnabled(False)
+        self.play_button.setIcon(QIcon("img/resume.png"))
+        self.play_button.setIconSize(QSize(24, 24))
+        self.play_button.setFixedSize(40, 40)
+        self.play_button.setToolTip("Resume Verification Process")
+        self.play_button.clicked.connect(self.on_play)
+        self.pause_button = QPushButton()
+        self.pause_button.setEnabled(False)
+        self.pause_button.setIcon(QIcon("img/pause.png"))
+        self.pause_button.setIconSize(QSize(24, 24))
+        self.pause_button.setFixedSize(40, 40)
+        self.pause_button.setToolTip("Pause Verification Process")
+        self.pause_button.clicked.connect(self.on_pause)
+        self.stop_button = QPushButton()
+        self.stop_button.setEnabled(False)
+        self.stop_button.setIcon(QIcon("img/stop.png"))
+        self.stop_button.setIconSize(QSize(24, 24))
+        self.stop_button.setFixedSize(40, 40)
+        self.stop_button.setToolTip("Stop Verification Process")
+        self.stop_button.clicked.connect(self.on_stop)
+        button_layout.addWidget(self.verify_button)
+        button_layout.addWidget(self.pause_button)
+        button_layout.addWidget(self.play_button)
+        button_layout.addWidget(self.stop_button)
+        top_row_layout.addLayout(button_layout)
+        main_layout.addLayout(top_row_layout)
+
+        # Mathematical statement screen
         self.statement_input = QTextEdit()
         self.statement_input.setPlaceholderText("Enter the mathematical statement here...")
-        layout.addWidget(self.statement_input)
+        main_layout.addWidget(self.statement_input)
 
-        self.verify_button = QPushButton("Generate and Verify Proof")
-        self.verify_button.clicked.connect(self.on_verify)
-        layout.addWidget(self.verify_button)
 
         # Proof Display and Iterations Section
         self.tabs = QTabWidget()
@@ -61,7 +98,7 @@ class ProofVerificationGUI(QMainWindow):
         latest_tab_layout.addWidget(self.latest_result_display)
         self.latest_tab.setLayout(latest_tab_layout)
         self.tabs.addTab(self.latest_tab, "Latest Iteration")
-        layout.addWidget(self.tabs)
+        main_layout.addWidget(self.tabs)
 
         # Iteration Info
         iteration_info_layout = QHBoxLayout()
@@ -69,7 +106,7 @@ class ProofVerificationGUI(QMainWindow):
         self.status_label = QLabel(f"Status: {self.status}")
         iteration_info_layout.addWidget(self.iteration_label)
         iteration_info_layout.addWidget(self.status_label)
-        layout.addLayout(iteration_info_layout)
+        main_layout.addLayout(iteration_info_layout)
 
         self.setWindowTitle("Proof Verifier")
         self.setGeometry(100, 100, 600, 500)
@@ -117,6 +154,16 @@ class ProofVerificationGUI(QMainWindow):
         """
         self.status = status
         self.status_label.setText(f"Status: {self.status}")
+        color = {
+            "Paused": "#87CEEB",
+            "Pausing": "#87CEEB",
+            "Stopped": "#FF6347",
+            "Stopping": "#FF6347",
+            "Active": "#32CD32",
+            "Inactive": "#D3D3D3",
+        }.get(status, "#D3D3D3")
+        self.status_label.setStyleSheet(f"color: {color};")
+        self.update_button_states()
 
     def on_verify(self):
         """
@@ -124,6 +171,11 @@ class ProofVerificationGUI(QMainWindow):
         Retrieves the mathematical statement from the input field and triggers
         the proof generation and verification process using the provided API.
         """
+        self.initiateProof()
+        statement = self.statement_input.toPlainText()
+        self.api.generate_and_verify_proof(statement)
+
+    def initiateProof(self):
         self.iteration_count = 0
         self.update_status("Active")
         self.iteration_label.setText(f"Iteration: {self.iteration_count}")
@@ -133,11 +185,29 @@ class ProofVerificationGUI(QMainWindow):
         self.latest_result_display.clear()
 
         # Avoid clearing the tabs unnecessarily
-        if self.tabs.count() > 1:
+        while self.tabs.count() > 1:
             self.tabs.removeTab(1)
 
-        statement = self.statement_input.toPlainText()
-        self.api.generate_and_verify_proof(statement)
+    def on_play(self):
+        self.update_status("Active")
+        self.update_button_states()
+        self.api.resume_proof()
+
+    def on_pause(self):
+        self.update_status("Pausing")
+        self.update_button_states()
+        self.api.pause_proof()
+
+    def on_stop(self):
+        self.update_status("Stopping")
+        self.update_button_states()
+        self.api.stop_proof()
+
+    def update_button_states(self):
+        self.verify_button.setEnabled(self.status in ["Inactive", "Stopped"])
+        self.play_button.setEnabled(self.status == "Paused")
+        self.pause_button.setEnabled(self.status == "Active")
+        self.stop_button.setEnabled(self.status in ["Active", "Paused"])
 
     @pyqtSlot(bool, str, str)
     def display_result(self, is_valid, proof, feedback):
@@ -155,12 +225,22 @@ class ProofVerificationGUI(QMainWindow):
             if is_valid:
                 self.end_proof_verification()
             return
-        if self.iteration_count > 0:
+
+        if self.status == "Stopped":
+            self.end_proof_verification("Stopped")
+            return
+
+        if "iteration limit" in feedback.lower():
+            self.end_proof_verification(status="Inactive", failed=True)
+            return
+
+        if not is_valid and self.iteration_count < ITERATIONS_LIMIT:
             self.iteration_count += 1
             tab_name = f"Iteration {self.iteration_count}"
             existing_tabs = [self.tabs.tabText(i) for i in range(self.tabs.count())]
             if tab_name not in existing_tabs:
                 self.add_iteration_tab(tab_name, proof, result, feedback)
+
         if is_valid:
             self.end_proof_verification()
 
@@ -187,13 +267,22 @@ class ProofVerificationGUI(QMainWindow):
         iteration_tab.setLayout(tab_layout)
         self.tabs.addTab(iteration_tab, tab_name)
 
-    def end_proof_verification(self):
+    def end_proof_verification(self, status = "Inactive", failed = False):
         """
         Stops further verification and shows a success message.
         """
-        self.status = "Inactive"
+
+        self.status = status
         self.status_label.setText(f"Status: {self.status}")
-        QMessageBox.information(self, "Proof Verified", "A valid proof has been found!")
+        if failed:
+            QMessageBox.critical(self, "Proof Failed", "Proof Verification Failed!\nReached the iteration limit without finding a valid proof.")
+            return
+        if status == "Stopped":
+            QMessageBox.warning(self, "Proof Stopped", "Proof Verification process has been stopped!")
+            return
+        else:
+            QMessageBox.information(self, "Proof Verified", "A valid proof has been found!")
+            return
 
     def toggle_dark_mode(self, state):
         """

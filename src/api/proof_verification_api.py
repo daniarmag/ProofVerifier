@@ -14,10 +14,13 @@ class ProofVerificationAPI(QObject):
     proof_result = pyqtSignal(bool, str, str)
     progress_update = pyqtSignal(str)
     update_status = pyqtSignal(str)
+    run_paused = pyqtSignal()
+    run_stopped = pyqtSignal()
 
     def __init__(self):
         super().__init__()
         self.thread, self.worker = None, None
+        self.is_cleaned_up = False
 
 
 
@@ -27,13 +30,13 @@ class ProofVerificationAPI(QObject):
         Generates a proof for the given mathematical statement and verifies it using Agda.
         If the proof is invalid, it refines the proof iteratively until a valid one is found.
         """
-        if self.thread and self.thread.isRunning():
-            self.progress_update.emit("A proof generation process is already running.")
-            return
-
         if self.thread:
-            self.thread.quit()
-            self.thread.wait()
+            if self.thread.isRunning():
+                self.progress_update.emit("A proof generation process is already running.")
+                return
+
+            self.cleanup_thread()
+        self.is_cleaned_up = False
 
         self.thread = QThread()
         self.worker = ProofWorker(self, statement)
@@ -41,7 +44,7 @@ class ProofVerificationAPI(QObject):
 
         # Connect signals
         self.thread.started.connect(self.worker.run)
-        self.worker.proof_result.connect(self.proof_result.emit)
+        self.worker.proof_result.connect(self.handle_proof_completion)
         self.worker.progress_update.connect(self.progress_update.emit)
         self.worker.status_update.connect(self.update_status)
 
@@ -52,6 +55,38 @@ class ProofVerificationAPI(QObject):
 
         self.thread.start()
 
+    def handle_proof_completion(self, is_valid, proof, feedback):
+        self.proof_result.emit(is_valid, proof, feedback)
+        finished_statements = ["has been stopped"]
+        if is_valid or (self.worker and self.worker.refinements == constants.ITERATIONS_LIMIT) or any(s for s in finished_statements if s in feedback.lower()):
+            self.cleanup_thread()
+
+    def cleanup_thread(self):
+        if self.thread:
+            try:
+                self.thread.quit()
+                self.thread.wait()
+                self.thread.deleteLater()
+            except RuntimeError:
+                pass
+            finally:
+                self.thread = None
+                self.worker = None
+        self.is_cleaned_up = True
+
+    def pause_proof(self):
+        if self.worker:
+            self.worker.pause()
+
+    def stop_proof(self):
+        if self.worker:
+            self.worker.stop()
+
+    def resume_proof(self):
+        if self.worker:
+            self.worker.resume()
+        else:
+            self.generate_and_verify_proof(self.worker.statement)
 
     def generate_proof_with_chatgpt(self, statement):
         """

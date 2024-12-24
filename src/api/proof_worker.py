@@ -52,7 +52,7 @@ class ProofWorker(QObject):
 
             if self.refinements >= constants.ITERATIONS_LIMIT:
                 feedback = "Reached the iteration limit without finding a valid proof."
-                self.proof_result.emit(is_valid, self.api.clean_agda_code(self.current_proof), feedback)
+                self.proof_result.emit(is_valid, self.api.clean_agda_code(self.current_proof), f"{self.current_feedback}\n\n{feedback}")
                 self.status_update.emit("Inactive")
                 return
 

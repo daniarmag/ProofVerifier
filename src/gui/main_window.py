@@ -231,11 +231,18 @@ class ProofVerificationGUI(QMainWindow):
             return
 
         if "iteration limit" in feedback.lower():
+            tab_name = f"Iteration {self.iteration_count}"
+            for i in range(self.tabs.count()):
+                if self.tabs.tabText(i) == tab_name:
+                    self.tabs.removeTab(i)
+                    break
+            self.add_iteration_tab(tab_name, proof, result, feedback)
             self.end_proof_verification(status="Inactive", failed=True)
             return
 
         if not is_valid and self.iteration_count < ITERATIONS_LIMIT:
             self.iteration_count += 1
+            self.iteration_label.setText(f"Iteration {self.iteration_count}")
             tab_name = f"Iteration {self.iteration_count}"
             existing_tabs = [self.tabs.tabText(i) for i in range(self.tabs.count())]
             if tab_name not in existing_tabs:
@@ -274,6 +281,16 @@ class ProofVerificationGUI(QMainWindow):
 
         self.status = status
         self.status_label.setText(f"Status: {self.status}")
+        # Print content of all existing tabs
+        print("---- Content of All Tabs ----")
+        for i in range(self.tabs.count()):
+            tab = self.tabs.widget(i)
+            print(f"Tab {i + 1} - {self.tabs.tabText(i)}")
+            for child in tab.children():
+                if isinstance(child, QTextEdit):
+                    print(child.toPlainText())
+                    print("-" * 50)  # Separator for readability
+        print("---- End of Tab Content ----")
         if failed:
             QMessageBox.critical(self, "Proof Failed", "Proof Verification Failed!\nReached the iteration limit without finding a valid proof.")
             return
@@ -288,7 +305,7 @@ class ProofVerificationGUI(QMainWindow):
         """
         Toggles the dark mode theme for the application.
         """
-        app = QApplication.instance()  # Get the existing QApplication instance
+        app = QApplication.instance()
         if state:
             app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
         else:

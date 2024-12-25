@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from PyQt5.QtWidgets import QApplication
-from utils import constants
+from utils import common
 import threading
 import logging
 
@@ -50,7 +50,7 @@ class ProofWorker(QObject):
                 self.proof_result.emit(is_valid, self.current_proof, "Proof Verification has been stopped.")
                 return
 
-            if self.refinements >= constants.ITERATIONS_LIMIT:
+            if self.refinements >= common.get_iterations_limit():
                 feedback = "Reached the iteration limit without finding a valid proof."
                 self.proof_result.emit(is_valid, self.api.clean_agda_code(self.current_proof), f"{self.current_feedback}\n\n{feedback}")
                 self.status_update.emit("Inactive")

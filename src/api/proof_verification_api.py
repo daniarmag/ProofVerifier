@@ -2,7 +2,7 @@ import subprocess
 import openai
 import re
 import logging
-from utils import common, constants
+from utils import common
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread
 from api.proof_worker import ProofWorker
 
@@ -58,7 +58,7 @@ class ProofVerificationAPI(QObject):
     def handle_proof_completion(self, is_valid, proof, feedback):
         self.proof_result.emit(is_valid, proof, feedback)
         finished_statements = ["has been stopped"]
-        if is_valid or (self.worker and self.worker.refinements == constants.ITERATIONS_LIMIT) or any(s for s in finished_statements if s in feedback.lower()):
+        if is_valid or (self.worker and self.worker.refinements == common.get_iterations_limit()) or any(s for s in finished_statements if s in feedback.lower()):
             self.cleanup_thread()
 
     def cleanup_thread(self):

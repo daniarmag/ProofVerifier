@@ -25,4 +25,3 @@ def get_iterations_limit():
 def set_iterations_limit(limit):
     global ITERATIONS_LIMIT
     ITERATIONS_LIMIT = limit
-

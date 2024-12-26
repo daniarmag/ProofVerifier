@@ -1,11 +1,14 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel, QMainWindow, QAction, QMessageBox, QApplication, QTabWidget, QHBoxLayout, QInputDialog, QFileDialog
 from PyQt5.QtCore import pyqtSlot, QMetaObject, Qt, Q_ARG, QSize
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QTextDocument
+from PyQt5.QtPrintSupport import QPrinter
 from utils import common
 from api.proof_worker import ProofWorker
 from gui.user_guide_window import UserGuideWindow
-from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
 from pathlib import Path
 from datetime import datetime
 import qdarkstyle
@@ -27,6 +30,7 @@ class ProofVerificationGUI(QMainWindow):
         self.iteration_count = 0
         self.status = "Inactive"
         self.verdict = "Not Set"
+        self.temp_files = ['temp_proof.agda', 'temp_proof.agdai']
         self.is_paused = False
         self.init_ui()
         self.dark_mode_action.setChecked(True)
@@ -50,6 +54,7 @@ class ProofVerificationGUI(QMainWindow):
         top_row_layout.addWidget(QLabel("Mathematical Statement:"))
         button_layout = QHBoxLayout()
         self.verify_button = QPushButton()
+        self.verify_button.setEnabled(False)
         self.verify_button.setIcon(QIcon("img/verify.png"))
         self.verify_button.setIconSize(QSize(24, 24))
         self.verify_button.setFixedSize(36, 36)
@@ -86,6 +91,7 @@ class ProofVerificationGUI(QMainWindow):
         # Mathematical statement screen
         self.statement_input = QTextEdit()
         self.statement_input.setPlaceholderText("Enter the mathematical statement here...")
+        self.statement_input.textChanged.connect(self.on_statement_changed)
         main_layout.addWidget(self.statement_input)
 
 
@@ -181,69 +187,48 @@ class ProofVerificationGUI(QMainWindow):
         self.user_guide_window = UserGuideWindow(pdf_path)
         self.user_guide_window.show()
 
-    # Todo: Fix save_to_pdf
-    # Todo: Disable verification submitting if math statement window is empty
     def save_to_pdf(self):
         """
-        Saves the content to a PDF file. Adds a summary page and separates tabs with clear formatting.
+        Saves the content to a PDF file using QTextDocument and HTML rendering.
+        Adds a summary page and separates tabs with clear formatting.
         """
         if self.tabs.count() < 2 or self.status not in ["Inactive", "Stopped"]:
             QMessageBox.warning(self, "Save to PDF",
                                 "Cannot save to PDF. Ensure the process is complete and there are tabs available.")
             return
-        downloads_path = str(Path.home() / "Downloads")
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_name = os.path.join(downloads_path, f"proof_verification_{timestamp}.pdf")
+        file_name = os.path.join(str(Path.home() / "Downloads"), f"proof_verification_{timestamp}.pdf")
         if file_name:
             try:
-                pdf = canvas.Canvas(file_name, pagesize=letter)
-                pdf.setFont("Helvetica", 10)
-
-                pdf.drawString(50, 770, "Proof Verification Summary")
-                pdf.line(50, 765, 550, 765)
-                pdf.drawString(50, 740, "Mathematical Statement:")
+                document = QTextDocument()
+                html_content = '<html><head><meta charset="UTF-8"></head><body>'
+                html_content += '<h1>Proof Verification Summary</h1>'
+                html_content += '<hr>'
+                html_content += '<h2>Mathematical Statement:</h2>'
                 statement = self.statement_input.toPlainText().strip()
-                pdf.drawString(70, 725, statement if statement else "N/A")
-                pdf.drawString(50, 700, f"Total Iterations: {self.iteration_count}")
-                pdf.drawString(50, 660, f"Result: {self.verdict}")
-                pdf.showPage()
-
+                html_content += f'<p>{statement if statement else "N/A"}</p>'
+                html_content += f'<h2>Total Iterations:</h2><p>{self.iteration_count}</p>'
+                html_content += f'<h2>Result:</h2><p>{self.verdict}</p>'
                 for i in range(self.tabs.count()):
                     tab_name = self.tabs.tabText(i)
                     tab = self.tabs.widget(i)
-                    pdf.setFont("Helvetica-Bold", 12)
-                    pdf.drawString(50, 770, tab_name)
-                    pdf.setFont("Helvetica", 10)
-                    pdf.line(50, 765, 550, 765)
-                    y_position = 740
-
+                    html_content += f'<h2>{tab_name}</h2>'
+                    html_content += '<hr>'
                     for child in tab.children():
                         if isinstance(child, QLabel):
                             section_header = child.text()
-                            pdf.setFont("Helvetica-Bold", 12)
-                            pdf.drawString(50, y_position, section_header)
-                            y_position -= 20
-                            pdf.setFont("Helvetica", 10)
-
+                            html_content += f'<h3>{section_header}</h3>'
                         if isinstance(child, QTextEdit):
-                            content = child.toPlainText()
-                            text_lines = content.split("\n")
-                            for line in text_lines:
-                                if y_position < 50:  # Add a new page if content exceeds page height
-                                    pdf.showPage()
-                                    pdf.setFont("Helvetica-Bold", 12)
-                                    pdf.drawString(50, 770, f"Tab {i + 1}: {tab_name}")
-                                    pdf.setFont("Helvetica", 10)
-                                    y_position = 740
-
-                                pdf.drawString(50, y_position, line)
-                                y_position -= 15
-
-                    # Separator between tabs
-                    if i != self.tabs.count() - 1:  # Add separator only if not the last tab
-                        pdf.showPage()
-
-                pdf.save()
+                            content = child.toPlainText().replace("\n", "<br>")
+                            html_content += f'<p>{content}</p>'
+                    html_content += '<hr>'
+                html_content += '</body></html>'
+                document.setHtml(html_content)
+                printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+                printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
+                printer.setOutputFileName(file_name)
+                document.print(printer)
                 QMessageBox.information(self, "Save to PDF", f"The content has been successfully saved to PDF!\nSave location: {file_name}")
             except Exception as e:
                 QMessageBox.critical(self, "Save to PDF", f"An error occurred: {e}")
@@ -323,8 +308,18 @@ class ProofVerificationGUI(QMainWindow):
         self.update_button_states()
         self.api.stop_proof()
 
+    def on_statement_changed(self):
+        """
+        Handler for when the statement input text changes.
+        Enables/disables the verify button based on whether there is non-whitespace content.
+        """
+        text = self.statement_input.toPlainText().strip()
+        should_enable = bool(text) and self.status in ["Inactive", "Stopped"]
+        self.verify_button.setEnabled(should_enable)
+
     def update_button_states(self):
-        self.verify_button.setEnabled(self.status in ["Inactive", "Stopped"])
+        text = self.statement_input.toPlainText().strip()
+        self.verify_button.setEnabled(bool(text) and self.status in ["Inactive", "Stopped"])
         self.play_button.setEnabled(self.status == "Paused")
         self.pause_button.setEnabled(self.status == "Active")
         self.stop_button.setEnabled(self.status in ["Active", "Paused"])
@@ -416,6 +411,27 @@ class ProofVerificationGUI(QMainWindow):
             QMessageBox.information(self, "Proof Verified", msg)
             self.verdict = msg
             return
+
+    def closeEvent(self, event):
+        """
+        Override the close event to perform cleanup before closing the application.
+        """
+        try:
+            self.cleanup_temp_files()
+            event.accept()
+        except Exception:
+            event.accept()
+
+    def cleanup_temp_files(self):
+        """
+        Remove temporary files created during program execution.
+        """
+        for temp_file in self.temp_files:
+            try:
+                if os.path.exists(temp_file):
+                    os.remove(temp_file)
+            except Exception:
+                pass
 
     @staticmethod
     def toggle_dark_mode(state):

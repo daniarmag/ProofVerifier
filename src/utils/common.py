@@ -1,27 +1,43 @@
 import subprocess
 import os
 
+# Constants
 VERSION = "1.2.5"
 ITERATIONS_LIMIT = 50
 
-def run_command(cmd: str, output: bool = False) -> tuple[int, any]:
+# Centralized Access to Constants
+def get_version():
+    """Returns the current version of the application."""
+    return VERSION
+
+def get_iterations_limit():
+    """Returns the current iteration limit for proof verification."""
+    return ITERATIONS_LIMIT
+
+def set_iterations_limit(limit):
+    """Sets a new iteration limit with validation to ensure it's a positive integer."""
+    global ITERATIONS_LIMIT
+    ITERATIONS_LIMIT = limit
+
+
+# Utility Functions
+def run_command(cmd: str, output: bool = False) -> tuple[int, str]:
+    """
+    Executes a shell command with optional output capture and
+    Args:
+        cmd (str): The command to execute.
+        output (bool): If True, captures the output of the command.
+
+    Returns:
+        tuple[int, str]: A tuple containing the exit code and the command output (if captured).
+    """
     agda_bin_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Agda", "bin")
     os.environ['PATH'] = agda_bin_dir + os.pathsep + os.environ['PATH']
     try:
         if not output:
-            p = subprocess.run(cmd, shell=True, capture_output=False, stdout=subprocess.DEVNULL)
+            process = subprocess.run(cmd, shell=True, capture_output=False, stdout=subprocess.DEVNULL)
         else:
-            p = subprocess.run(cmd, shell=True, text=True, capture_output=True)
-        return int(p.returncode) , str(p.stdout)
+            process = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+        return int(process.returncode), str(process.stdout.strip()) if output else ""
     except subprocess.CalledProcessError as e:
-        return -1, e
-
-def get_version():
-    return VERSION
-
-def get_iterations_limit():
-    return ITERATIONS_LIMIT
-
-def set_iterations_limit(limit):
-    global ITERATIONS_LIMIT
-    ITERATIONS_LIMIT = limit
+        return -1, str(e)

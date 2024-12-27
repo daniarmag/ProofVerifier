@@ -261,9 +261,9 @@ class ProofVerificationGUI(QMainWindow):
         self.status_label.setText(f"Status: {self.status}")
         color = {
             "Paused": "#87CEEB",
-            "Pausing": "#87CEEB",
+            "Pausing...": "#87CEEB",
             "Stopped": "#FF6347",
-            "Stopping": "#FF6347",
+            "Stopping...": "#FF6347",
             "Active": "#32CD32",
             "Inactive": "#D3D3D3",
         }.get(status, "#D3D3D3")
@@ -299,12 +299,12 @@ class ProofVerificationGUI(QMainWindow):
         self.api.resume_proof()
 
     def on_pause(self):
-        self.update_status("Pausing")
+        self.update_status("Pausing...")
         self.update_button_states()
         self.api.pause_proof()
 
     def on_stop(self):
-        self.update_status("Stopping")
+        self.update_status("Stopping...")
         self.update_button_states()
         self.api.stop_proof()
 

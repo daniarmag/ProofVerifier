@@ -40,7 +40,6 @@ class ProofWorker(QObject):
         """
         self.stopped = False
         self.paused = False
-
         # Initial Proof Generation
         self.current_proof = self.api.generate_proof_with_chatgpt(self.statement)
         is_valid, self.current_feedback, self.current_proof = self.api.verify_with_agda(self.current_proof)
@@ -48,43 +47,40 @@ class ProofWorker(QObject):
             self.handle_valid()
             return
         self.proof_result.emit(is_valid, self.current_proof, self.current_feedback)
-
+        # Initiate iterative refinement process
         while not is_valid:
+            # Handle stop
             if self.stopped:
                 self.handle_stop()
                 return
-
+            # Handle limits
             if self.refinements >= common.get_iterations_limit():
                 self.handle_iteration_limit()
                 return
-
             # Refinement step
             self.refinements += 1
             self.current_proof = self.api.refine_proof_with_chatgpt(self.statement, self.current_proof, self.current_feedback)
             is_valid, self.current_feedback, self.current_proof = self.api.verify_with_agda(self.current_proof)
-
+            # Handle refinement success
             if is_valid:
                 self.handle_valid()
                 return
-
+            # Handle user pause
             if self.paused:
                 self.handle_pause()
-
+            # Update result
             self.proof_result.emit(is_valid, self.current_proof, self.current_feedback)
-
-        self.status_update.emit("Inactive")
 
     def handle_stop(self):
         """Handles the stop state and emits relevant signals."""
         self.status_update.emit("Stopped")
-        self.progress_update.emit(f"Iteration {self.refinements + 1}: Proof verification has been stopped.")
-        self.proof_result.emit(False, self.current_proof, "Proof verification has been stopped.")
+        self.proof_result.emit(False, self.current_proof, f"Proof verification has been stopped after {self.refinements + 1} iterations.")
 
     def handle_iteration_limit(self):
         """Handles the case where the iteration limit is reached."""
+        self.status_update.emit("Inactive")
         feedback = "Reached the iteration limit without finding a valid proof."
         self.proof_result.emit(False, self.api.clean_agda_code(self.current_proof), f"{self.current_feedback}\n\n{feedback}")
-        self.status_update.emit("Inactive")
 
     def handle_pause(self):
         """Handles the pause state by idling the thread until resumed or stopped."""
@@ -96,4 +92,4 @@ class ProofWorker(QObject):
     def handle_valid(self):
         """Handles the case where the proof is valid after refining."""
         self.status_update.emit("Inactive")
-        self.proof_result.emit(True, self.current_proof, "Proof has been compiled and verified.")
+        self.proof_result.emit(True, self.current_proof, f"Proof has been compiled and verified after {self.refinements} iterations.")

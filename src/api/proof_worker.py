@@ -44,11 +44,10 @@ class ProofWorker(QObject):
         # Initial Proof Generation
         self.current_proof = self.api.generate_proof_with_chatgpt(self.statement)
         is_valid, self.current_feedback, self.current_proof = self.api.verify_with_agda(self.current_proof)
-        self.proof_result.emit(is_valid, self.current_proof, self.current_feedback)
-
         if is_valid:
-            self.status_update.emit("Inactive")
+            self.handle_valid()
             return
+        self.proof_result.emit(is_valid, self.current_proof, self.current_feedback)
 
         while not is_valid:
             if self.stopped:

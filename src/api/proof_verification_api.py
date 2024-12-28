@@ -19,6 +19,7 @@ class ProofVerificationAPI(QObject):
     def __init__(self):
         super().__init__()
         self.thread, self.worker = None, None
+        self.statement = ""
 
     @pyqtSlot(str)
     def generate_and_verify_proof(self, statement):
@@ -27,6 +28,7 @@ class ProofVerificationAPI(QObject):
         Args:
             statement (str): The mathematical statement to be verified.
         """
+        self.statement = statement
         if self.thread:
             if self.thread.isRunning():
                 self.progress_update.emit("A proof generation process is already running.")
@@ -97,6 +99,28 @@ class ProofVerificationAPI(QObject):
         if is_valid or (self.worker and self.worker.refinements == common.get_iterations_limit()) or any(s for s in finished_statements if s in feedback.lower()):
             self.cleanup_thread()
 
+    def verify_with_agda(self, proof):
+        """
+        Verifies the given Agda proof using the Agda type-checker.
+        :param proof: api proof that needs agda verification.
+        """
+        proof = self.clean_agda_code(proof)
+        temp_filename = "temp_proof.agda"
+        # Write proof to a temporary file
+        with codecs.open(temp_filename, "w", encoding='utf-8') as f:
+            f.write(proof)
+        # Run Agda type-checker
+        exit_code, feedback = common.run_command("agda --transliterate temp_proof.agda", True)
+        is_valid = (exit_code == 0)
+
+        # Extra layer of validation
+        if is_valid:
+            api_validation = self.validate_with_api(proof, self.statement)
+            if "yes" not in api_validation.lower():
+                is_valid = False
+                feedback += "\nVerification failed: The statement was not confirmed as valid by the API."
+        return is_valid, feedback, proof
+
     def generate_proof_with_chatgpt(self, statement):
         """
         Generates a formal proof in Agda using ChatGPT for the given statement.
@@ -120,20 +144,29 @@ class ProofVerificationAPI(QObject):
         )
         return response.choices[0].message.content
 
-    def verify_with_agda(self, proof):
+    def validate_with_api(self, proof, statement):
         """
-        Verifies the given Agda proof using the Agda type-checker.
-        :param proof: api proof that needs agda verification.
+        Sends the proof to the API for additional validation.
+        :param proof: The Agda proof found valid.
+        :param statement: The mathematical statement being verified.
+        :return: "yes" or "no" based on API response.
         """
-        proof = self.clean_agda_code(proof)
-        temp_filename = "temp_proof.agda"
-        # Write proof to a temporary file
-        with codecs.open(temp_filename, "w", encoding='utf-8') as f:
-            f.write(proof)
-        # Run Agda type-checker
-        exit_code, feedback = common.run_command("agda --transliterate temp_proof.agda", True)
-        is_valid = (exit_code == 0)
-        return is_valid, feedback, proof
+        prompt = (
+            f"You are an expert in Agda programming."
+            f"Please answer with yes and no only.\n"
+            f"Does this proof verify the statement: '{statement}'?\n\n"
+            f"{proof}"
+        )
+        response = openai.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a mathematical proof generator. Provide proofs in Agda syntax."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=3,
+            temperature=0
+        )
+        return response.choices[0].message.content.strip()
 
     def refine_proof_with_chatgpt(self, statement, previous_proof, feedback):
         """

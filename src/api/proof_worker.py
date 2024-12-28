@@ -59,21 +59,20 @@ class ProofWorker(QObject):
                 self.handle_iteration_limit()
                 return
 
+            # Refinement step
             self.refinements += 1
             self.current_proof = self.api.refine_proof_with_chatgpt(self.statement, self.current_proof, self.current_feedback)
-
-            # Refinement step
             is_valid, self.current_feedback, self.current_proof = self.api.verify_with_agda(self.current_proof)
-            self.proof_result.emit(is_valid, self.current_proof, self.current_feedback)
 
             if is_valid:
-                break
+                self.handle_valid()
+                return
 
             if self.paused:
                 self.handle_pause()
 
-        if is_valid:
-            self.proof_result.emit(True, self.api.clean_agda_code(self.current_proof), "Valid proof found.")
+            self.proof_result.emit(is_valid, self.current_proof, self.current_feedback)
+
         self.status_update.emit("Inactive")
 
     def handle_stop(self):
@@ -94,3 +93,8 @@ class ProofWorker(QObject):
         self.progress_update.emit(f"Iteration {self.refinements + 1}: Proof verification is paused.")
         while self.paused and not self.stopped:
             QThread.msleep(100)
+
+    def handle_valid(self):
+        """Handles the case where the proof is valid after refining."""
+        self.status_update.emit("Inactive")
+        self.proof_result.emit(True, self.current_proof, "Proof has been compiled and verified.")

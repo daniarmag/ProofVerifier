@@ -32,8 +32,13 @@ def run_command(cmd: str, output: bool = False) -> tuple[int, str]:
         tuple[int, str]: A tuple containing the exit code and the command output (if captured).
     """
     agda_bin_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Agda", "bin")
-    os.environ['PATH'] = agda_bin_dir + os.pathsep + os.environ['PATH']
+    env = os.environ.copy()
+    env['PATH'] = agda_bin_dir + os.pathsep + os.environ['PATH']
+    env["PYTHONIOENCODING"] = "utf-8"
+    if os.name != "nt":
+        env["LC_ALL"] = "en_US.UTF-8"
     try:
+        subprocess.run("CHCP 65001", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) if os.name == "nt" else None
         if not output:
             process = subprocess.run(cmd, shell=True, capture_output=False, stdout=subprocess.DEVNULL)
         else:

@@ -2,6 +2,8 @@ import subprocess
 import openai
 import re
 import logging
+import unicodedata
+import codecs
 from utils import common
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread
 from api.proof_worker import ProofWorker
@@ -95,7 +97,6 @@ class ProofVerificationAPI(QObject):
         if is_valid or (self.worker and self.worker.refinements == common.get_iterations_limit()) or any(s for s in finished_statements if s in feedback.lower()):
             self.cleanup_thread()
 
-
     def generate_proof_with_chatgpt(self, statement):
         """
         Generates a formal proof in Agda using ChatGPT for the given statement.
@@ -106,7 +107,7 @@ class ProofVerificationAPI(QObject):
             f"in Agda for the following mathematical statement: '{statement}'.\n"
             f"Requirements:\n"
             f"- The output must be a complete Agda module named 'temp_proof'.\n"
-            f"- Do NOT use any libraries, not even the Agda standard library. "
+            f"- Do NOT use any libraries or infixl, not even the Agda standard library. "
             f"All definitions (e.g., natural numbers, basic functions) must be implemented from scratch.\n"
             f"- Output only valid Agda code, without any comments, explanations, or extra text."
         )
@@ -125,8 +126,9 @@ class ProofVerificationAPI(QObject):
         :param proof: api proof that needs agda verification.
         """
         proof = self.clean_agda_code(proof)
+        temp_filename = "temp_proof.agda"
         # Write proof to a temporary file
-        with open("temp_proof.agda", "w", encoding='utf-8') as f:
+        with codecs.open(temp_filename, "w", encoding='utf-8') as f:
             f.write(proof)
         # Run Agda type-checker
         exit_code, feedback = common.run_command("agda --transliterate temp_proof.agda", True)
@@ -150,7 +152,7 @@ class ProofVerificationAPI(QObject):
             f"Requirements:\n"
             f"- Modify the proof based on the feedback to ensure it is valid and complete.\n"
             f"- The module name must remain 'temp_proof'.\n"
-            f"- Do NOT use any libraries, not even the Agda standard library. "
+            f"- Do NOT use any libraries or infixl, not even the Agda standard library. "
             f"All definitions must be implemented from scratch.\n"
             f"- Output only valid Agda code, without any comments, explanations, or extra text."
         )
@@ -185,8 +187,7 @@ class ProofVerificationAPI(QObject):
 
         :param raw_code: code before cleaning
         """
-        clean_code = raw_code.replace("```agda", "").replace("```", "").strip()
-        clean_code = re.sub(r'.*(?=data|module)', '', clean_code, flags=re.DOTALL).strip()
-        clean_code = re.sub(r'--.*\n', '', clean_code)
-        clean_code = clean_code.encode("utf-8", "ignore").decode("utf-8")
+        clean_code = unicodedata.normalize("NFC", raw_code)
+        clean_code = clean_code.replace("```agda", "").replace("```", "").strip()
+        clean_code = clean_code.replace('\r\n', '\n')
         return clean_code

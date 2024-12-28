@@ -374,6 +374,9 @@ class ProofVerificationGUI(QMainWindow):
             self.end_proof_verification("Stopped")
             return
 
+        if is_valid:
+            self.end_proof_verification()
+
         if "iteration limit" in feedback.lower():
             tab_name = f"Iteration {self.iteration_count}"
             for i in range(self.tabs.count()):
@@ -391,9 +394,6 @@ class ProofVerificationGUI(QMainWindow):
             existing_tabs = [self.tabs.tabText(i) for i in range(self.tabs.count())]
             if tab_name not in existing_tabs:
                 self.add_iteration_tab(tab_name, proof, result, feedback)
-
-        if is_valid:
-            self.end_proof_verification()
 
     def add_iteration_tab(self, tab_name, proof, result, feedback):
         """

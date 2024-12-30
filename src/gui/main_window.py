@@ -321,7 +321,6 @@ class ProofVerificationGUI(QMainWindow):
         self.update_status("Pausing...")
         self.update_button_states()
         self.api.pause_proof()
-        QMessageBox.information(self, "Paused", "The verification process has been paused.")
 
     def on_stop(self):
         """

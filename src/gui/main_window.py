@@ -190,7 +190,7 @@ class ProofVerificationGUI(QMainWindow):
         """
         Opens the User Guide window with an embedded PDF viewer.
         """
-        pdf_path = os.path.join("files", "user_guide.pdf")
+        pdf_path = os.path.join("files", "Proof_Verifier_User_help.pdf")
         if not os.path.exists(pdf_path):
             QMessageBox.critical(self, "Error", f"User guide not found at: {pdf_path}")
             return

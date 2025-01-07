@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel, QMainWindow, QAction, QMessageBox, QApplication, QTabWidget, QHBoxLayout, QInputDialog, QFileDialog, QProgressDialog
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel, QMainWindow, QAction, QMessageBox, QApplication, QTabWidget, QHBoxLayout, QInputDialog, QFileDialog, QProgressDialog, QDialog
 from PyQt5.QtCore import pyqtSlot, QMetaObject, Qt, Q_ARG, QSize
 from PyQt5.QtGui import QIcon, QTextDocument
 from PyQt5.QtPrintSupport import QPrinter
@@ -86,6 +86,9 @@ class ProofVerificationGUI(QMainWindow):
         user_help_action = QAction("User Help", self)
         user_help_action.triggered.connect(self.open_user_guide)
         help_menu.addAction(user_help_action)
+        contact_action = QAction("Contact Us", self)
+        contact_action.triggered.connect(self.show_contact_info)
+        help_menu.addAction(contact_action)
         about_submenu = help_menu.addMenu("About")
         version_action = QAction(f"Version: {common.get_version()}", self)
         version_action.triggered.connect(self.show_version)
@@ -193,6 +196,34 @@ class ProofVerificationGUI(QMainWindow):
             new_limit = dialog.intValue()
             common.set_iterations_limit(new_limit)
             QMessageBox.information(self, "Iterations Config", f"The iterations limit has been updated to {new_limit}.")
+
+    def show_contact_info(self):
+        """
+        Displays contact information in a dialog with selectable and copyable text.
+        """
+        contact_dialog = QDialog(self)
+        contact_dialog.setWindowTitle("Contact Us")
+        contact_dialog.setMinimumSize(400, 150)
+        layout = QVBoxLayout(contact_dialog)
+        contact_message = (
+            "If you need assistance, please contact us:\n\n"
+            "Daniel Armaganian:\n"
+            "Email: daniarmag@gmail.com\n"
+            "Tzahi Bakal:\n"
+            "Email: tzahi.bakal@gmail.com\n\n"
+            "We value your feedback and are here to help!"
+        )
+        text_area = QTextEdit(contact_dialog)
+        text_area.setPlainText(contact_message)
+        text_area.setReadOnly(True)
+        text_area.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        layout.addWidget(text_area)
+
+        close_button = QPushButton("Close", contact_dialog)
+        close_button.clicked.connect(contact_dialog.close)
+        layout.addWidget(close_button)
+        contact_dialog.setLayout(layout)
+        contact_dialog.exec_()
 
     def open_user_guide(self):
         """

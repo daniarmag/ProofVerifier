@@ -99,10 +99,10 @@ class ProofVerificationGUI(QMainWindow):
         top_row_layout = QHBoxLayout()
 
         buttons_layout = QHBoxLayout()
-        self.verify_button = self.create_icon_button("img/verify.png", "Start Verification Process", self.on_verify)
-        self.pause_button = self.create_icon_button("img/pause.png", "Pause Verification Process", self.on_pause)
-        self.resume_button = self.create_icon_button("img/resume.png", "Resume Verification Process", self.on_resume)
-        self.stop_button = self.create_icon_button("img/stop.png", "Stop Verification Process", self.on_stop)
+        self.verify_button = self.create_icon_button(common.resource_path("img/verify.png"), "Start Verification Process", self.on_verify)
+        self.pause_button = self.create_icon_button(common.resource_path("img/pause.png"), "Pause Verification Process", self.on_pause)
+        self.resume_button = self.create_icon_button(common.resource_path("img/resume.png"), "Resume Verification Process", self.on_resume)
+        self.stop_button = self.create_icon_button(common.resource_path("img/stop.png"), "Stop Verification Process", self.on_stop)
 
         buttons_layout.addWidget(self.verify_button)
         buttons_layout.addWidget(self.pause_button)
@@ -229,7 +229,7 @@ class ProofVerificationGUI(QMainWindow):
         """
         Opens the User Guide window with an embedded PDF viewer.
         """
-        pdf_path = os.path.join("files", "Proof_Verifier_User_help.pdf")
+        pdf_path = common.resource_path(os.path.join("files", "Proof_Verifier_User_help.pdf"))
         if not os.path.exists(pdf_path):
             QMessageBox.critical(self, "Error", f"User guide not found at: {pdf_path}")
             return

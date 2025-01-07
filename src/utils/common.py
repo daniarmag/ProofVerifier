@@ -1,5 +1,6 @@
 import subprocess
 import os
+import sys
 
 # Constants
 VERSION = "2.0"
@@ -36,7 +37,7 @@ def run_command(cmd: str, output: bool = False) -> tuple[int, str]:
     Returns:
         tuple[int, str]: A tuple containing the exit code and the command output (if captured).
     """
-    agda_bin_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Agda", "bin")
+    agda_bin_dir = resource_path("Agda/bin")
     env = os.environ.copy()
     env['PATH'] = agda_bin_dir + os.pathsep + os.environ['PATH']
     if os.name != "nt":
@@ -50,3 +51,8 @@ def run_command(cmd: str, output: bool = False) -> tuple[int, str]:
         return int(process.returncode), str(process.stdout.strip()) if output else ""
     except subprocess.CalledProcessError as e:
         return -1, str(e)
+
+def resource_path(relative_path):
+    """ Get the absolute path to a resource, works for dev and PyInstaller """
+    base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
+    return os.path.join(base_path, relative_path)

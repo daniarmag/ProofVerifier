@@ -1,4 +1,5 @@
 import sys
+from utils import common
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication
 from api.proof_verification_api import ProofVerificationAPI
@@ -11,7 +12,7 @@ if __name__ == '__main__':
     """
     load_dotenv()
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon('img/logo.png'))
+    app.setWindowIcon(QIcon(common.resource_path('img/logo.png')))
     api = ProofVerificationAPI()
     gui = ProofVerificationGUI(api)
     gui.show()

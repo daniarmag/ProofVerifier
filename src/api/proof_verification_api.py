@@ -4,11 +4,12 @@ import re
 import logging
 import unicodedata
 import codecs
+import os
 from utils import common
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread
 from api.proof_worker import ProofWorker
 logging.basicConfig(
-    filename='ProofVerifier.log',
+    filename=os.path.join(common.get_proof_verifier_directory(), 'ProofVerifier.log'),
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -123,7 +124,7 @@ class ProofVerificationAPI(QObject):
                 f.write(proof)
             # Run Agda type-checker
             logging.debug("beginning of verify_with_agda")
-            exit_code, feedback = common.run_command(f'agda --transliterate "{common.resource_path(temp_filename)}"', True)
+            exit_code, feedback = common.run_command(f'agda --transliterate {temp_filename}"', True)
             feedback = ProofVerificationAPI.categorize_feedback(feedback)
             is_valid = (exit_code == 0)
 

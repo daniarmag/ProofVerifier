@@ -18,7 +18,7 @@ import time
 import os
 import logging
 logging.basicConfig(
-    filename='ProofVerifier.log',
+    filename=os.path.join(common.get_proof_verifier_directory(), 'ProofVerifier.log'),
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -70,7 +70,8 @@ class ProofVerificationGUI(QMainWindow):
             self.toggle_dark_mode(dark_mode)
             iterations_limit = cache_data.get("iterations_limit", common.get_iterations_limit())
             common.set_iterations_limit(iterations_limit)
-            api_key = cache_data.get("api_key")
+            api_key = cache_data.get("api_key", "")
+            logging.debug(f"restore_configuration: {api_key}")
             if api_key:
                 common.set_api_key(api_key)
             else:
@@ -594,6 +595,8 @@ class ProofVerificationGUI(QMainWindow):
             event.accept()
         except Exception:
             event.accept()
+        finally:
+            logging.debug("closeEvent: Good Bye.")
 
     def cleanup_temp_files(self) -> None:
         """

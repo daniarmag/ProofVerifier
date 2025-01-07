@@ -2,12 +2,29 @@ import subprocess
 import os
 import sys
 import json
+import logging
 from pathlib import Path
 
 # Constants
 VERSION = "2.0"
 ITERATIONS_LIMIT = 50
 MAX_API_LOOP_CHECKER = 5
+
+def get_proof_verifier_directory():
+    """
+    Determines and creates the platform-specific directory for storing application data.
+    Returns the directory path.
+    """
+    app_name = "ProofVerifier"
+    base_dir = Path.home()
+    proof_verifier_dir = base_dir / app_name
+    proof_verifier_dir.mkdir(parents=True, exist_ok=True)
+    return proof_verifier_dir
+
+logging.basicConfig(
+    filename=os.path.join(get_proof_verifier_directory(), 'ProofVerifier.log'),
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s')
 
 def get_max_api_loop_checker():
     """Returns the limit constant of inner verifications."""
@@ -60,12 +77,12 @@ def set_api_key(api_key: str):
     :param api_key: The API key to be saved.
     """
     try:
-        cache_data = common.load_cache_data()
+        cache_data = load_cache_data()
         cache_data["api_key"] = api_key
-        common.save_cache_data(cache_data)
+        save_cache_data(cache_data)
         os.environ["OPENAI_API_KEY"] = api_key
     except Exception as e:
-        pass
+        logging.debug(f"set_api_key:{e}")
 
 def resource_path(relative_path):
     """
@@ -75,17 +92,6 @@ def resource_path(relative_path):
     """
     base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
     return os.path.join(base_path, relative_path)
-
-def get_proof_verifier_directory():
-    """
-    Determines and creates the platform-specific directory for storing application data.
-    Returns the directory path.
-    """
-    app_name = "ProofVerifier"
-    base_dir = Path.home()
-    proof_verifier_dir = base_dir / app_name
-    proof_verifier_dir.mkdir(parents=True, exist_ok=True)
-    return proof_verifier_dir
 
 def save_cache_data(data):
     """
@@ -98,8 +104,8 @@ def save_cache_data(data):
         existing_data.update(data)
         with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(existing_data, f, indent=4)
-    except:
-        pass
+    except Exception as e:
+        logging.debug(f"save_cache_data:{e}")
 
 
 def load_cache_data():
@@ -113,6 +119,6 @@ def load_cache_data():
             with open(cache_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 return data
-    except:
-        pass
+    except Exception as e:
+        logging.debug(f"load_cache_data:{e}")
     return {}

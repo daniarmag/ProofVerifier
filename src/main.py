@@ -3,6 +3,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication
 from api.proof_verification_api import ProofVerificationAPI
 from gui.main_window import ProofVerificationGUI
+from dotenv import load_dotenv
 
 if __name__ == '__main__':
     """

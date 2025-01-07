@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel, QMainWindow, QAction, QMessageBox, QApplication, QTabWidget, QHBoxLayout, QInputDialog, QFileDialog, QProgressDialog, QDialog
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel, QMainWindow, QAction, QMessageBox,
+                             QApplication, QTabWidget, QHBoxLayout, QInputDialog, QLineEdit, QFileDialog, QProgressDialog, QDialog)
 from PyQt5.QtCore import pyqtSlot, QMetaObject, Qt, Q_ARG, QSize
 from PyQt5.QtGui import QIcon, QTextDocument
 from PyQt5.QtPrintSupport import QPrinter
@@ -15,6 +16,12 @@ import qdarkstyle
 import re
 import time
 import os
+import logging
+logging.basicConfig(
+    filename='ProofVerifier.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 class ProofVerificationGUI(QMainWindow):
     """
@@ -32,6 +39,7 @@ class ProofVerificationGUI(QMainWindow):
         self.temp_files = ['temp_proof.agda', 'temp_proof.agdai']
         self.is_paused = False
         self.init_ui()
+        self.restore_configuration()
         self.connect_signals()
 
 
@@ -53,8 +61,23 @@ class ProofVerificationGUI(QMainWindow):
         self.setWindowTitle("Proof Verifier")
         self.setGeometry(100, 100, 600, 500)
         self.showMaximized()
-        self.dark_mode_action.setChecked(True)
-        self.toggle_dark_mode(True)
+
+    def restore_configuration(self):
+        try:
+            cache_data = common.load_cache_data()
+            dark_mode = cache_data.get("dark_mode", True)
+            self.dark_mode_action.setChecked(dark_mode)
+            self.toggle_dark_mode(dark_mode)
+            iterations_limit = cache_data.get("iterations_limit", common.get_iterations_limit())
+            common.set_iterations_limit(iterations_limit)
+            api_key = cache_data.get("api_key")
+            if api_key:
+                common.set_api_key(api_key)
+            else:
+                if "OPENAI_API_KEY" in os.environ:
+                    del os.environ["OPENAI_API_KEY"]
+        except Exception as e:
+            logging.debug(f"Error restoring configuration: {e}")
 
     def create_menu_bar(self):
         """
@@ -80,6 +103,9 @@ class ProofVerificationGUI(QMainWindow):
         iterations_action = QAction("Set Iterations Limit", self)
         iterations_action.triggered.connect(self.configure_iterations_limit)
         config_menu.addAction(iterations_action)
+        set_api_action = QAction("Set API Key", self)
+        set_api_action.triggered.connect(self.configure_api_key)
+        config_menu.addAction(set_api_action)
 
         # Help Menu
         help_menu = menu_bar.addMenu("Help")
@@ -173,29 +199,84 @@ class ProofVerificationGUI(QMainWindow):
         self.api.proof_result.connect(self.display_result)
         self.api.update_status.connect(self.update_status)
 
+    def configure_setting(self, title, label, cache_key, default_value, is_number=False, min_value=None, max_value=None, env_var=None):
+        """
+        Generic method to configure a setting via a dialog, save it to the cache, and optionally update an environment variable.
+        :param title: Title of the dialog window
+        :param label: Label text for the input field
+        :param cache_key: The key in the cache to update
+        :param default_value: The default value if the cache does not contain the key
+        :param is_number: Whether the input is numeric
+        :param min_value: Minimum value for numeric inputs (optional)
+        :param max_value: Maximum value for numeric inputs (optional)
+        :param env_var: Name of the environment variable to update (optional)
+        """
+        if self.status in ["Active", "Paused"]:
+            QMessageBox.warning(
+                self,
+                f"{title} Config",
+                f"You cannot configure {title} while the verification process is active. "
+                "Retry when the status of program is stopped or inactive."
+            )
+            return
+
+        try:
+            success = False
+            cache_data = common.load_cache_data()
+            new_value = cache_data.get(cache_key, default_value)
+            dialog = QInputDialog(self)
+            dialog.setWindowTitle(f"Set {title}")
+            dialog.setLabelText(label)
+            dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+            if is_number:
+                dialog.setIntRange(min_value, max_value)
+                dialog.setIntValue(int(new_value))
+                if dialog.exec_() == QInputDialog.Accepted:
+                    new_value = dialog.intValue()
+                    success = True
+            else:
+                dialog.setTextValue(new_value)
+                if dialog.exec_() == QInputDialog.Accepted:
+                    new_value = dialog.textValue().strip()
+                    if not new_value:
+                        QMessageBox.critical(self, "title", "OpenAI API key cannot be an empty string.")
+                    success = bool(new_value)
+            if not success:
+                return
+            cache_data[cache_key] = new_value
+            common.save_cache_data(cache_data)
+            if env_var:
+                os.environ[env_var] = new_value
+            QMessageBox.information(self, title, f"{title} updated successfully.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An error occurred while updating {title}: {e}")
+
     def configure_iterations_limit(self):
         """
         Opens a dialog for the user to set the number of iterations limit dynamically.
         """
-        # Create the input dialog
-        if self.status in ["Active", "Paused"]:
-            QMessageBox.warning(
-                self,
-                "Iterations Config",
-                "You cannot configure the iterations limit while the verification process is active. "
-                "Retry when the status of program is stopped or inactive. "
-            )
-            return
-        dialog = QInputDialog(self)
-        dialog.setWindowTitle("Set Iterations Limit")
-        dialog.setLabelText("Enter the maximum number of iterations:")
-        dialog.setIntValue(common.get_iterations_limit())
-        dialog.setIntRange(1, 1000)
-        dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-        if dialog.exec_() == QInputDialog.Accepted:
-            new_limit = dialog.intValue()
-            common.set_iterations_limit(new_limit)
-            QMessageBox.information(self, "Iterations Config", f"The iterations limit has been updated to {new_limit}.")
+        self.configure_setting(
+            title="Iterations Limit",
+            label="Enter the maximum number of iterations:",
+            cache_key="iterations_limit",
+            default_value=common.get_iterations_limit(),
+            is_number=True,
+            min_value=1,
+            max_value=1000
+        )
+
+    def configure_api_key(self):
+        """
+        Opens a dialog for the user to input or update their API key.
+        """
+        self.configure_setting(
+            title="API Key",
+            label="Enter your API key:",
+            cache_key="api_key",
+            default_value="",
+            is_number=False,
+            env_var="OPENAI_API_KEY"
+        )
 
     def show_contact_info(self):
         """
@@ -339,6 +420,9 @@ class ProofVerificationGUI(QMainWindow):
         Retrieves the mathematical statement from the input field and triggers
         the proof generation and verification process using the provided API.
         """
+        if "OPENAI_API_KEY" not in os.environ:
+            QMessageBox.critical(self, "No OpenAI API Key", "Cannot start verification process before setting OpenAI API Key.")
+            return
         self.initiateProof()
         statement = self.statement_input.toPlainText()
         self.api.generate_and_verify_proof(statement)
@@ -499,6 +583,7 @@ class ProofVerificationGUI(QMainWindow):
             self.verdict = msg
             return
 
+
     def closeEvent(self, event):
         """
         Override the close event to perform cleanup before closing the application.
@@ -516,6 +601,7 @@ class ProofVerificationGUI(QMainWindow):
         """
         for temp_file in self.temp_files:
             try:
+                temp_file = common.resource_path(temp_file)
                 if os.path.exists(temp_file):
                     os.remove(temp_file)
             except Exception:
@@ -528,6 +614,12 @@ class ProofVerificationGUI(QMainWindow):
         """
         app = QApplication.instance()
         app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5() if enabled else "")
+        try:
+            cache_data = common.load_cache_data()
+            cache_data["dark_mode"] = enabled
+            common.save_cache_data(cache_data)
+        except Exception as e:
+            logging.debug(e)
 
     def show_version(self) -> None:
         """

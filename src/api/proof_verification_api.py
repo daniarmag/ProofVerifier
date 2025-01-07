@@ -7,6 +7,10 @@ import codecs
 from utils import common
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread
 from api.proof_worker import ProofWorker
+logging.basicConfig(
+    filename='ProofVerifier.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s')
 
 class ProofVerificationAPI(QObject):
     """
@@ -107,6 +111,7 @@ class ProofVerificationAPI(QObject):
         :param proof: api proof that needs agda verification.
         """
         try:
+            logging.debug("beginning of verify_with_agda")
             proof = self.check_if_proof_exists(ProofVerificationAPI.clean_agda_code(proof))
             if proof in self.proofs:
                 # If still repeated after 5 attempts, emit a failure message.
@@ -117,7 +122,8 @@ class ProofVerificationAPI(QObject):
             with codecs.open(temp_filename, "w", encoding='utf-8') as f:
                 f.write(proof)
             # Run Agda type-checker
-            exit_code, feedback = common.run_command("agda --transliterate temp_proof.agda", True)
+            logging.debug("beginning of verify_with_agda")
+            exit_code, feedback = common.run_command(f'agda --transliterate "{common.resource_path(temp_filename)}"', True)
             feedback = ProofVerificationAPI.categorize_feedback(feedback)
             is_valid = (exit_code == 0)
 
@@ -129,7 +135,7 @@ class ProofVerificationAPI(QObject):
                     feedback += "\nVerification failed: The statement was not confirmed as valid by the API."
             return is_valid, feedback, proof
         except Exception as e:
-            logging.error(f"Verification failed with error: {e}")
+            logging.debug(f"Verification failed with error: {e}")
             return False, f"Error during verification: {e}", proof
 
     def check_if_proof_exists(self, proof):

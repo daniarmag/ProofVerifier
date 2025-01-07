@@ -9,3 +9,4 @@ agda/
 temp_proof.agda
 temp_proof.agdai
 ProofVerifier.spec
+ProofVerifier.log

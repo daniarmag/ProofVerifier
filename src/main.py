@@ -9,6 +9,7 @@ if __name__ == '__main__':
     """
     Activate the system
     """
+    load_dotenv()
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon('img/logo.png'))
     api = ProofVerificationAPI()

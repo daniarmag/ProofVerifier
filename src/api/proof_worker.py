@@ -85,11 +85,11 @@ class ProofWorker(QObject):
     def handle_pause(self):
         """Handles the pause state by idling the thread until resumed or stopped."""
         self.status_update.emit("Paused")
-        self.progress_update.emit(f"Iteration {self.refinements + 1}: Proof verification is paused.")
+        self.progress_update.emit(f"Iteration {self.refinements}: Proof verification is paused.")
         while self.paused and not self.stopped:
             QThread.msleep(100)
 
     def handle_valid(self):
         """Handles the case where the proof is valid after refining."""
         self.status_update.emit("Inactive")
-        self.proof_result.emit(True, self.current_proof, f"Proof has been compiled and verified after {self.refinements} iterations.")
+        self.proof_result.emit(True, self.current_proof, f"Proof has been compiled and verified after {self.refinements if self.refinements else 1} iterations.")

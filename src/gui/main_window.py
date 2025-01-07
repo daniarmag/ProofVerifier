@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel, QMainWindow, QAction, QMessageBox, QApplication, QTabWidget, QHBoxLayout, QInputDialog, QFileDialog
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel, QMainWindow, QAction, QMessageBox, QApplication, QTabWidget, QHBoxLayout, QInputDialog, QFileDialog, QProgressDialog
 from PyQt5.QtCore import pyqtSlot, QMetaObject, Qt, Q_ARG, QSize
 from PyQt5.QtGui import QIcon, QTextDocument
 from PyQt5.QtPrintSupport import QPrinter
@@ -175,6 +175,14 @@ class ProofVerificationGUI(QMainWindow):
         Opens a dialog for the user to set the number of iterations limit dynamically.
         """
         # Create the input dialog
+        if self.status in ["Active", "Paused"]:
+            QMessageBox.warning(
+                self,
+                "Iterations Config",
+                "You cannot configure the iterations limit while the verification process is active. "
+                "Retry when the status of program is stopped or inactive. "
+            )
+            return
         dialog = QInputDialog(self)
         dialog.setWindowTitle("Set Iterations Limit")
         dialog.setLabelText("Enter the maximum number of iterations:")
@@ -184,7 +192,7 @@ class ProofVerificationGUI(QMainWindow):
         if dialog.exec_() == QInputDialog.Accepted:
             new_limit = dialog.intValue()
             common.set_iterations_limit(new_limit)
-            QMessageBox.information(self, "Iterations Limit Updated", f"The iterations limit has been updated to {new_limit}.")
+            QMessageBox.information(self, "Iterations Config", f"The iterations limit has been updated to {new_limit}.")
 
     def open_user_guide(self):
         """
@@ -203,14 +211,20 @@ class ProofVerificationGUI(QMainWindow):
         Adds a summary page and separates tabs with clear formatting.
         """
         if self.tabs.count() < 2 or self.status not in ["Inactive", "Stopped"]:
-            QMessageBox.warning(self, "Save to PDF",
-                                "Cannot save to PDF. Ensure the process is complete and there are tabs available.")
+            QMessageBox.warning(self, "Save to PDF", "Cannot save to PDF. Ensure the process is complete and there are tabs available.")
             return
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_name = os.path.join(str(Path.home() / "Downloads"), f"proof_verification_{timestamp}.pdf")
         if file_name:
             try:
+                # Progress dialog
+                progress_dialog = QProgressDialog("Saving to PDF...", "Cancel", 0, 100, self)
+                progress_dialog.setWindowTitle("Saving to PDF")
+                progress_dialog.setWindowModality(Qt.WindowModal)
+                progress_dialog.setMinimumDuration(0)
+                progress_dialog.setValue(0)
+
                 document = QTextDocument()
                 html_content = '<html><head><meta charset="UTF-8"></head><body>'
                 html_content += '<h1>Proof Verification Summary</h1>'
@@ -220,6 +234,10 @@ class ProofVerificationGUI(QMainWindow):
                 html_content += f'<p>{statement if statement else "N/A"}</p>'
                 html_content += f'<h2>Total Iterations:</h2><p>{self.iteration_count}</p>'
                 html_content += f'<h2>Result:</h2><p>{self.verdict}</p>'
+                total_steps = self.tabs.count() + 1
+                progress_increment = 100 // total_steps
+                progress = 0
+                progress_dialog.setValue(progress)
                 for i in range(self.tabs.count()):
                     tab_name = self.tabs.tabText(i)
                     tab = self.tabs.widget(i)
@@ -233,12 +251,16 @@ class ProofVerificationGUI(QMainWindow):
                             content = child.toPlainText().replace("\n", "<br>")
                             html_content += f'<p>{content}</p>'
                     html_content += '<hr>'
+                    progress += progress_increment
+                    progress_dialog.setValue(min(progress, 90))
                 html_content += '</body></html>'
                 document.setHtml(html_content)
                 printer = QPrinter(QPrinter.PrinterMode.HighResolution)
                 printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
                 printer.setOutputFileName(file_name)
                 document.print(printer)
+                progress_dialog.setValue(100)
+                progress_dialog.close()
                 QMessageBox.information(self, "Save to PDF", f"The content has been successfully saved to PDF!\nSave location: {file_name}")
             except Exception as e:
                 QMessageBox.critical(self, "Save to PDF", f"An error occurred: {e}")

@@ -19,6 +19,7 @@ class ProofVerificationAPI(QObject):
     def __init__(self):
         super().__init__()
         self.thread, self.worker = None, None
+        self.proofs = set()
         self.statement = ""
 
     @pyqtSlot(str)
@@ -28,6 +29,7 @@ class ProofVerificationAPI(QObject):
         Args:
             statement (str): The mathematical statement to be verified.
         """
+        self.proofs = set()
         self.statement = statement
         if self.thread:
             if self.thread.isRunning():
@@ -104,101 +106,62 @@ class ProofVerificationAPI(QObject):
         Verifies the given Agda proof using the Agda type-checker.
         :param proof: api proof that needs agda verification.
         """
-        proof = self.clean_agda_code(proof)
-        temp_filename = "temp_proof.agda"
-        # Write proof to a temporary file
-        with codecs.open(temp_filename, "w", encoding='utf-8') as f:
-            f.write(proof)
-        # Run Agda type-checker
-        exit_code, feedback = common.run_command("agda --transliterate temp_proof.agda", True)
-        is_valid = (exit_code == 0)
+        try:
+            proof = self.check_if_proof_exists(ProofVerificationAPI.clean_agda_code(proof))
+            if proof in self.proofs:
+                # If still repeated after 5 attempts, emit a failure message.
+                return False, "Failed to refine proof, refining proof and retrying..", proof
+            self.proofs.add(proof)
+            temp_filename = "temp_proof.agda"
+            # Write proof to a temporary file
+            with codecs.open(temp_filename, "w", encoding='utf-8') as f:
+                f.write(proof)
+            # Run Agda type-checker
+            exit_code, feedback = common.run_command("agda --transliterate temp_proof.agda", True)
+            feedback = ProofVerificationAPI.categorize_feedback(feedback)
+            is_valid = (exit_code == 0)
 
-        # Extra layer of validation
-        if is_valid:
-            api_validation = self.validate_with_api(proof, self.statement)
-            if "yes" not in api_validation.lower():
-                is_valid = False
-                feedback += "\nVerification failed: The statement was not confirmed as valid by the API."
-        return is_valid, feedback, proof
+            # Extra layer of validation
+            if is_valid:
+                api_validation = self.validate_with_api(proof, self.statement)
+                if "yes" not in api_validation.lower():
+                    is_valid = False
+                    feedback += "\nVerification failed: The statement was not confirmed as valid by the API."
+            return is_valid, feedback, proof
+        except Exception as e:
+            logging.error(f"Verification failed with error: {e}")
+            return False, f"Error during verification: {e}", proof
 
-    def generate_proof_with_chatgpt(self, statement):
+    def check_if_proof_exists(self, proof):
         """
-        Generates a formal proof in Agda using ChatGPT for the given statement.
-        :param statement: original statement for verification
+        :param: newly generated proof
+        :return: after loop fix mechanism.
         """
-        prompt = (
-            f"You are an expert in Agda programming. Your task is to generate a formal proof "
-            f"in Agda for the following mathematical statement: '{statement}'.\n"
-            f"Requirements:\n"
-            f"- The output must be a complete Agda module named 'temp_proof'.\n"
-            f"- Do NOT use any libraries or infixl, not even the Agda standard library. "
-            f"All definitions (e.g., natural numbers, basic functions) must be implemented from scratch.\n"
-            f"- Output only valid Agda code, without any comments, explanations, or extra text."
-        )
-        response = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a mathematical proof generator. Provide proofs in Agda syntax."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
+        for attempt in range(common.get_max_api_loop_checker()):
+            if proof in self.proofs:
+                # Conditional inclusion of proof in feedback
+                feedback = f"This proof has already been attempted, retrying..."
+                self.progress_update.emit(feedback)
+                proof = self.refine_proof_with_chatgpt(self.statement, proof, feedback)
+                proof = self.clean_agda_code(proof)
+            else:
+                break
+        return proof
 
-    def validate_with_api(self, proof, statement):
+    @staticmethod
+    def categorize_feedback(feedback):
         """
-        Sends the proof to the API for additional validation.
-        :param proof: The Agda proof found valid.
-        :param statement: The mathematical statement being verified.
-        :return: "yes" or "no" based on API response.
+        :param feedback: feedback from agda compiler.
+        :return: specific feedback.
         """
-        prompt = (
-            f"You are an expert in Agda programming."
-            f"Please answer with yes and no only.\n"
-            f"Does this proof verify the statement: '{statement}'?\n\n"
-            f"{proof}"
-        )
-        response = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a mathematical proof generator. Provide proofs in Agda syntax."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=3,
-            temperature=0
-        )
-        return response.choices[0].message.content.strip()
+        if "syntax error" in feedback.lower():
+            return f"Syntax Error: {feedback}"
+        elif "type mismatch" in feedback.lower():
+            return f"Type Mismatch: {feedback}"
+        return f"General Feedback: {feedback}"
 
-    def refine_proof_with_chatgpt(self, statement, previous_proof, feedback):
-        """
-        Refines the given Agda proof based on feedback using ChatGPT.
-        :param statement: original statement
-        :param previous_proof: proof that needs refining
-        :param feedback: current compiler feedback
-        """
-        prompt = (
-            f"You are an expert in Agda programming. Your task is to refine the following Agda proof "
-            f"for the statement: '{statement}'.\n"
-            f"Provided proof:\n"
-            f"```\n{previous_proof}\n```\n"
-            f"Feedback from the Agda compiler:\n"
-            f"```\n{feedback + self.check_and_feedback_for_imports(previous_proof)}\n```\n"
-            f"Requirements:\n"
-            f"- Modify the proof based on the feedback to ensure it is valid and complete.\n"
-            f"- The module name must remain 'temp_proof'.\n"
-            f"- Do NOT use any libraries or infixl, not even the Agda standard library. "
-            f"All definitions must be implemented from scratch.\n"
-            f"- Output only valid Agda code, without any comments, explanations, or extra text."
-        )
-        response = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are a mathematical proof generator. Provide proofs in Agda syntax."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
-
-    def check_and_feedback_for_imports(self, proof):
+    @staticmethod
+    def check_and_feedback_for_imports(proof):
         """
         Checks if the proof contains 'open import' statements and generates feedback for refinement.
         :param proof: the proof that we're checking for imports
@@ -210,7 +173,8 @@ class ProofVerificationAPI(QObject):
             )
         return ""
 
-    def clean_agda_code(self, raw_code):
+    @staticmethod
+    def clean_agda_code(raw_code):
         """
         Cleans the Agda code generated by ChatGPT by removing:
         - Markdown code block formatting (backticks)
@@ -224,3 +188,130 @@ class ProofVerificationAPI(QObject):
         clean_code = clean_code.replace("```agda", "").replace("```", "").strip()
         clean_code = clean_code.replace('\r\n', '\n')
         return clean_code
+
+    def generate_proof_with_chatgpt(self, statement):
+        """
+        Generates a formal proof in Agda using ChatGPT for the given statement.
+        :param statement: original statement for verification
+        """
+        prompt = (
+            f"You are an expert in Agda programming. Your task is to generate a formal proof "
+            f"in Agda for the following mathematical statement: '{statement}'.\n"
+            f"### Example:\n"
+            f"```\n{ProofVerificationAPI.get_agda_example()}\n```\n"
+            f"Requirements:\n"
+            f"- The output must be a complete Agda module named 'temp_proof'.\n"
+            f"- Do NOT use any libraries or infixl, not even the Agda standard library. "
+            f"All definitions (e.g., natural numbers, basic functions) must be implemented from scratch.\n"
+            f"- Output only valid Agda code, without any comments, explanations, or extra text."
+        )
+        try:
+            response = openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are a mathematical proof generator. Provide proofs in Agda syntax."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return response.choices[0].message.content
+        except openai.error.OpenAIError as e:
+            return f"Error during proof generation: {e}"
+
+    def validate_with_api(self, proof, statement):
+        """
+        Sends the proof to the API for additional validation.
+        :param proof: The Agda proof found valid.
+        :param statement: The mathematical statement being verified.
+        :return: "yes" or "no" based on API response.
+        """
+        prompt = (
+            f"You are an expert in Agda programming."
+            f"Please answer with 'yes' or 'no' only."
+            f"Does the following proof correctly verify the statement: '{statement}'?\n\n"
+            f"Proof:\n"
+            f"```\n{proof}\n```\n"
+        )
+        try:
+            response = openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are a mathematical proof generator. Provide proofs in Agda syntax."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=3,
+                temperature=0
+            )
+            return response.choices[0].message.content.strip()
+        except openai.error.OpenAIError as e:
+            return f"Error during correct proof validation: {e}"
+
+    def refine_proof_with_chatgpt(self, statement, previous_proof, feedback):
+        """
+        Refines the given Agda proof based on feedback using ChatGPT.
+        :param statement: original statement.
+        :param previous_proof: proof that needs refining.
+        :param feedback: current compiler feedback / processing feedback.
+        """
+
+        # Check whether there were imports in previous proof.
+        import_feedback = ProofVerificationAPI.check_and_feedback_for_imports(previous_proof)
+        additional_feedback = (
+            f"### Additional Feedback:\n"
+            f"{import_feedback}\n"
+            if import_feedback else ""
+        )
+        # Prepare feedback.
+        modified_feedback = (
+            f"Feedback from the Agda compiler:\n"
+            f"```\n{feedback}\n```\n"
+        ) if feedback not in ["This proof has already been attempted"] else (
+            f"Feedback from processing proof:\n"
+            f"```\n{feedback}\n```\n"
+        )
+        prompt = (
+            f"You are an expert in Agda programming. Your task is to refine the following Agda proof "
+            f"based on the given feedback for the statement: '{statement}'.\n"
+            f"### Example:\n"
+            f"```\n{ProofVerificationAPI.get_agda_example()}\n```\n"
+            f"--- Start of Context ---\n"
+            f"{additional_feedback}"
+            f"### Previous Proof:\n"
+            f"```\n{previous_proof}\n```\n"
+            f"{modified_feedback}"
+            f"--- End of Context ---\n"
+            f"Requirements:\n"
+            f"- Modify the proof based on the feedback to ensure it is valid and complete.\n"
+            f"- The module name must remain 'temp_proof'.\n"
+            f"- Do NOT use any libraries or infixl, not even the Agda standard library. "
+            f"All definitions must be implemented from scratch.\n"
+            f"- Output only valid Agda code, without any comments, explanations, or extra text."
+        )
+        try:
+            response = openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are a mathematical proof generator. Provide proofs in Agda syntax."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return response.choices[0].message.content
+        except openai.error.OpenAIError as e:
+            return f"Error during proof refinement: {e}"
+
+    @staticmethod
+    def get_agda_example():
+        """ Provides an example to the API. """
+        return """
+            module temp_proof where
+    
+            data ℕ : Set where
+              zero : ℕ
+              succ : ℕ → ℕ
+    
+            add : ℕ → ℕ → ℕ
+            add zero n = n
+            add (succ m) n = succ (add m n)
+    
+            data _≡_ {A : Set} (x : A) : A → Set where
+              refl : x ≡ x
+            """

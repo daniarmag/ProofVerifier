@@ -2,8 +2,13 @@ import subprocess
 import os
 
 # Constants
-VERSION = "1.3"
+VERSION = "2.0"
 ITERATIONS_LIMIT = 50
+MAX_API_LOOP_CHECKER = 5
+
+def get_max_api_loop_checker():
+    """Returns the limit constant of inner verifications."""
+    return MAX_API_LOOP_CHECKER
 
 # Centralized Access to Constants
 def get_version():

@@ -112,7 +112,6 @@ class ProofVerificationAPI(QObject):
         :param proof: api proof that needs agda verification.
         """
         try:
-            logging.debug("Beginning of verify_with_agda")
             proof = self.check_if_proof_exists(ProofVerificationAPI.clean_agda_code(proof))
             if proof in self.proofs:
                 # If still repeated after 5 attempts, emit a failure message.
@@ -123,7 +122,6 @@ class ProofVerificationAPI(QObject):
             with codecs.open(temp_filename, "w", encoding='utf-8') as f:
                 f.write(proof)
             # Run Agda type-checker
-            logging.debug("Middle of verify_with_agda")
             exit_code, feedback = common.run_command(f'agda --transliterate --compile-dir="{os.path.abspath(".")}" "{temp_filename}"', True)
             feedback = ProofVerificationAPI.categorize_feedback(feedback)
             is_valid = (exit_code == 0)
@@ -134,7 +132,6 @@ class ProofVerificationAPI(QObject):
                 if "yes" not in api_validation.lower():
                     is_valid = False
                     feedback += "\nVerification failed: The statement was not confirmed as valid by the API."
-            logging.debug("End of verify with Agda")
             return is_valid, feedback, proof
         except Exception as e:
             logging.debug(f"Verification failed with error: {e}")
@@ -166,7 +163,9 @@ class ProofVerificationAPI(QObject):
             return f"Syntax Error: {feedback}"
         elif "type mismatch" in feedback.lower():
             return f"Type Mismatch: {feedback}"
-        return f"General Feedback: {feedback}"
+        elif "not in scope" in feedback.lower():
+            return f"Not in scope error: {feedback}"
+        return feedback
 
     @staticmethod
     def check_and_feedback_for_imports(proof):
@@ -207,7 +206,7 @@ class ProofVerificationAPI(QObject):
         prompt = (
             f"You are an expert in Agda programming. Your task is to generate a formal proof "
             f"in Agda for the following mathematical statement: '{statement}'.\n"
-            f"### Example:\n"
+            f"### Example correct agda code :\n"
             f"```\n{ProofVerificationAPI.get_agda_example()}\n```\n"
             f"Requirements:\n"
             f"- The output must be a complete Agda module named 'temp_proof'.\n"
@@ -262,7 +261,6 @@ class ProofVerificationAPI(QObject):
         :param previous_proof: proof that needs refining.
         :param feedback: current compiler feedback / processing feedback.
         """
-
         # Check whether there were imports in previous proof.
         import_feedback = ProofVerificationAPI.check_and_feedback_for_imports(previous_proof)
         additional_feedback = (
@@ -281,7 +279,7 @@ class ProofVerificationAPI(QObject):
         prompt = (
             f"You are an expert in Agda programming. Your task is to refine the following Agda proof "
             f"based on the given feedback for the statement: '{statement}'.\n"
-            f"### Example:\n"
+            f"### Example correct agda code :\n"
             f"```\n{ProofVerificationAPI.get_agda_example()}\n```\n"
             f"--- Start of Context ---\n"
             f"{additional_feedback}"

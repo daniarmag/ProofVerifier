@@ -1,5 +1,4 @@
-**Project Status: WIP**
-
+Download ProofVerifier exectuable from here: https://drive.google.com/drive/folders/1B8zW-dO9rcprNjXHAU0rktjUy5oluiBj?usp=drive_link
 --------------------------------------------------------------------------------------------------
 
 **Abstract**

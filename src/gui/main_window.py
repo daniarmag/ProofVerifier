@@ -604,8 +604,9 @@ class ProofVerificationGUI(QMainWindow):
         """
         for temp_file in self.temp_files:
             try:
-                temp_file = common.resource_path(temp_file)
+                temp_file = os.path.join(os.path.abspath("."), temp_file)
                 if os.path.exists(temp_file):
+                    logging.debug("Cleaning up files before exit...")
                     os.remove(temp_file)
             except Exception:
                 pass

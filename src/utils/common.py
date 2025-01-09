@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import logging
+import tempfile
 from pathlib import Path
 
 # Constants
@@ -44,8 +45,25 @@ def set_iterations_limit(limit):
     global ITERATIONS_LIMIT
     ITERATIONS_LIMIT = limit
 
+def setup_environment() -> dict:
+    """
+    Sets up the environment variables for the shell command.
+    Returns:
+        dict: A modified environment dictionary.
+    """
+    env = os.environ.copy()
+    agda_bin_dir = os.path.join(os.path.abspath("."), "Agda", "bin")
+    env['PATH'] = agda_bin_dir + os.pathsep + env.get('PATH', '')
+    if os.name == "nt":
+        env['PYTHONIOENCODING'] = 'utf-8'
+        try:
+            subprocess.run("CHCP 65001", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        except subprocess.CalledProcessError:
+            logging.warning("Failed to set console code page to UTF-8")
+    else:
+        env["LC_ALL"] = "en_US.UTF-8"
+    return env
 
-# Utility Functions
 def run_command(cmd: str, output: bool = False) -> tuple[int, str]:
     """
     Executes a shell command with optional output capture and
@@ -56,19 +74,19 @@ def run_command(cmd: str, output: bool = False) -> tuple[int, str]:
     Returns:
         tuple[int, str]: A tuple containing the exit code and the command output (if captured).
     """
-    agda_bin_dir = resource_path("Agda/bin")
-    env = os.environ.copy()
-    env['PATH'] = agda_bin_dir + os.pathsep + os.environ['PATH']
-    if os.name != "nt":
-        env["LC_ALL"] = "en_US.UTF-8"
+    feedback = ""
+    env = setup_environment()
     try:
-        subprocess.run("CHCP 65001", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) if os.name == "nt" else None
+        logging.debug(f"Environment PATH: {env['PATH']}")
         if not output:
-            process = subprocess.run(cmd, shell=True, capture_output=False, stdout=subprocess.DEVNULL, encoding='utf-8')
+            process = subprocess.run(cmd, shell=True, capture_output=False, stdout=subprocess.DEVNULL, encoding='utf-8', env=env)
         else:
-            process = subprocess.run(cmd, shell=True, text=True, capture_output=True, encoding='utf-8')
-        return int(process.returncode), str(process.stdout.strip()) if output else ""
-    except subprocess.CalledProcessError as e:
+            process = subprocess.run(cmd, shell=True, text=True, capture_output=True, encoding='utf-8', env=env)
+            feedback = process.stdout.strip() if process.stdout else f"Could not compile, exit code: {process.returncode}."
+        logging.debug(f"Command completed. Stdout: {process.stdout is not None}, Stderr: {process.stderr is not None}")
+        return int(process.returncode), feedback
+    except Exception as e:
+        logging.error(f"Unexpected Exception in run_command: {e}")
         return -1, str(e)
 
 def set_api_key(api_key: str):

@@ -34,7 +34,6 @@ class ProofVerificationAPI(QObject):
         Args:
             statement (str): The mathematical statement to be verified.
         """
-        self.proofs = set()
         self.statement = statement
         if self.thread:
             if self.thread.isRunning():
@@ -91,6 +90,7 @@ class ProofVerificationAPI(QObject):
             except RuntimeError:
                 pass
             finally:
+                self.proofs = set()
                 self.thread = None
                 self.worker = None
 
@@ -112,28 +112,29 @@ class ProofVerificationAPI(QObject):
         :param proof: api proof that needs agda verification.
         """
         try:
-            logging.debug("beginning of verify_with_agda")
+            logging.debug("Beginning of verify_with_agda")
             proof = self.check_if_proof_exists(ProofVerificationAPI.clean_agda_code(proof))
             if proof in self.proofs:
                 # If still repeated after 5 attempts, emit a failure message.
                 return False, "Failed to refine proof, refining proof and retrying..", proof
             self.proofs.add(proof)
-            temp_filename = "temp_proof.agda"
+            temp_filename = os.path.join(os.path.abspath("."), "temp_proof.agda")
             # Write proof to a temporary file
             with codecs.open(temp_filename, "w", encoding='utf-8') as f:
                 f.write(proof)
             # Run Agda type-checker
-            logging.debug("beginning of verify_with_agda")
-            exit_code, feedback = common.run_command(f'agda --transliterate {temp_filename}"', True)
+            logging.debug("Middle of verify_with_agda")
+            exit_code, feedback = common.run_command(f'agda --transliterate --compile-dir="{os.path.abspath(".")}" "{temp_filename}"', True)
             feedback = ProofVerificationAPI.categorize_feedback(feedback)
             is_valid = (exit_code == 0)
-
             # Extra layer of validation
             if is_valid:
+                logging.debug("Validation of verify_with_agda")
                 api_validation = self.validate_with_api(proof, self.statement)
                 if "yes" not in api_validation.lower():
                     is_valid = False
                     feedback += "\nVerification failed: The statement was not confirmed as valid by the API."
+            logging.debug("End of verify with Agda")
             return is_valid, feedback, proof
         except Exception as e:
             logging.debug(f"Verification failed with error: {e}")
@@ -191,6 +192,8 @@ class ProofVerificationAPI(QObject):
 
         :param raw_code: code before cleaning
         """
+        if not raw_code:
+            return ""
         clean_code = unicodedata.normalize("NFC", raw_code)
         clean_code = clean_code.replace("```agda", "").replace("```", "").strip()
         clean_code = clean_code.replace('\r\n', '\n')
@@ -248,7 +251,7 @@ class ProofVerificationAPI(QObject):
                 max_tokens=3,
                 temperature=0
             )
-            return response.choices[0].message.content.strip()
+            return response.choices[0].message.content
         except openai.error.OpenAIError as e:
             return f"Error during correct proof validation: {e}"
 

@@ -10,5 +10,7 @@ Our system features an API designed to bridge the gap between natural language m
 The API accepts natural language input, translating it into a semi-formal proof structure that is subsequently validated by Agda. The system is designed for iterative refinement, where failed proofs are analyzed, and feedback is provided to the proof generation module, enabling continuous improvement until convergence is achieved. This architecture allows for efficient proof discovery and enhances the reliability of AI-generated mathematical proofs.
 
 For any issues contact: 
+
 Daniel Armaganian - daniarmag@gmail.com
+
 Tzahi Bakal - Tzahi.Bakal@gmail.com

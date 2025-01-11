@@ -583,19 +583,24 @@ class ProofVerificationGUI(QMainWindow):
             self.verdict = msg
             return
 
-
     def closeEvent(self, event):
         """
         Override the close event to perform cleanup before closing the application.
-        :param event: event
+        Displays a confirmation dialog with Yes/No options.
+        :param event: The close event.
         """
         try:
-            self.cleanup_temp_files()
+            reply = QMessageBox.question(self, "Exit Confirmation", "Are you sure you want to exit?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.cleanup_temp_files()
+                logging.debug("User confirmed exit. Cleaning up and closing.")
+                event.accept()
+            else:
+                logging.debug("User canceled exit.")
+                event.ignore()
+        except Exception as e:
+            logging.error(f"Error during close event: {e}")
             event.accept()
-        except Exception:
-            event.accept()
-        finally:
-            logging.debug("closeEvent: Good Bye.")
 
     def cleanup_temp_files(self) -> None:
         """

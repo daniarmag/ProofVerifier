@@ -38,7 +38,7 @@ def get_version():
 
 def get_iterations_limit():
     """Returns the current iteration limit for proof verification."""
-    return ITERATIONS_LIMIT
+    return load_cache_data().get("iterations_limit", ITERATIONS_LIMIT)
 
 def set_iterations_limit(limit: int):
     """Sets a new iteration limit with validation to ensure it's a positive integer."""

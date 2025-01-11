@@ -223,7 +223,7 @@ class ProofVerificationAPI(QObject):
                 ]
             )
             return response.choices[0].message.content
-        except openai.error.OpenAIError as e:
+        except Exception as e:
             return f"Error during proof generation: {e}"
 
     def validate_with_api(self, proof, statement):
@@ -251,7 +251,7 @@ class ProofVerificationAPI(QObject):
                 temperature=0
             )
             return response.choices[0].message.content
-        except openai.error.OpenAIError as e:
+        except Exception as e:
             return f"Error during correct proof validation: {e}"
 
     def refine_proof_with_chatgpt(self, statement, previous_proof, feedback):
@@ -303,7 +303,7 @@ class ProofVerificationAPI(QObject):
                 ]
             )
             return response.choices[0].message.content
-        except openai.error.OpenAIError as e:
+        except Exception as e:
             return f"Error during proof refinement: {e}"
 
     @staticmethod

@@ -101,10 +101,12 @@ class ProofVerificationGUI(QMainWindow):
 
         # Configuration Menu
         config_menu = menu_bar.addMenu("Config")
-        iterations_action = QAction("Set Iterations Limit", self)
+        # Iterations Limit Action
+        iterations_action = QAction(f"Set Iterations Limit (Currently {common.get_iterations_limit()})", self)
         iterations_action.triggered.connect(self.configure_iterations_limit)
         config_menu.addAction(iterations_action)
-        set_api_action = QAction("Set API Key", self)
+        # API Key Action
+        set_api_action = QAction(f"Set API Key", self)
         set_api_action.triggered.connect(self.configure_api_key)
         config_menu.addAction(set_api_action)
 
@@ -113,9 +115,12 @@ class ProofVerificationGUI(QMainWindow):
         user_help_action = QAction("User Help", self)
         user_help_action.triggered.connect(self.open_user_guide)
         help_menu.addAction(user_help_action)
+
         contact_action = QAction("Contact Us", self)
         contact_action.triggered.connect(self.show_contact_info)
         help_menu.addAction(contact_action)
+
+        # About Submenu
         about_submenu = help_menu.addMenu("About")
         version_action = QAction(f"Version: {common.get_version()}", self)
         version_action.triggered.connect(self.show_version)
@@ -422,7 +427,12 @@ class ProofVerificationGUI(QMainWindow):
         the proof generation and verification process using the provided API.
         """
         if "OPENAI_API_KEY" not in os.environ:
-            QMessageBox.critical(self, "No OpenAI API Key", "Cannot start verification process before setting OpenAI API Key.")
+            QMessageBox.critical(
+                self,
+                "Missing OpenAI API Key",
+                "Cannot start verification process before setting OpenAI API Key.\n"
+                "Please configure your API Key to proceed.")
+            self.configure_api_key()
             return
         self.initiateProof()
         statement = self.statement_input.toPlainText()

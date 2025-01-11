@@ -40,10 +40,29 @@ def get_iterations_limit():
     """Returns the current iteration limit for proof verification."""
     return ITERATIONS_LIMIT
 
-def set_iterations_limit(limit):
+def set_iterations_limit(limit: int):
     """Sets a new iteration limit with validation to ensure it's a positive integer."""
     global ITERATIONS_LIMIT
     ITERATIONS_LIMIT = limit
+
+def set_api_key(api_key: str):
+    """
+    Sets the API key in the configuration cache and as an environment variable.
+    :param api_key: The API key to be saved.
+    """
+    try:
+        cache_data = load_cache_data()
+        cache_data["api_key"] = api_key
+        save_cache_data(cache_data)
+        os.environ["OPENAI_API_KEY"] = api_key
+    except Exception as e:
+        logging.debug(f"set_api_key:{e}")
+
+def get_api_key():
+    """
+    :return: api key if set, else "Not Set"
+    """
+    return load_cache_data().get("api_key", "Not Set")
 
 def setup_environment() -> dict:
     """
@@ -88,19 +107,6 @@ def run_command(cmd: str, output: bool = False) -> tuple[int, str]:
     except Exception as e:
         logging.error(f"Unexpected Exception in run_command: {e}")
         return -1, str(e)
-
-def set_api_key(api_key: str):
-    """
-    Sets the API key in the configuration cache and as an environment variable.
-    :param api_key: The API key to be saved.
-    """
-    try:
-        cache_data = load_cache_data()
-        cache_data["api_key"] = api_key
-        save_cache_data(cache_data)
-        os.environ["OPENAI_API_KEY"] = api_key
-    except Exception as e:
-        logging.debug(f"set_api_key:{e}")
 
 def resource_path(relative_path):
     """

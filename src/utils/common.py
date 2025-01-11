@@ -42,27 +42,16 @@ def get_iterations_limit():
 
 def set_iterations_limit(limit: int):
     """Sets a new iteration limit with validation to ensure it's a positive integer."""
-    global ITERATIONS_LIMIT
-    ITERATIONS_LIMIT = limit
-
-def set_api_key(api_key: str):
-    """
-    Sets the API key in the configuration cache and as an environment variable.
-    :param api_key: The API key to be saved.
-    """
     try:
+        global ITERATIONS_LIMIT
+        ITERATIONS_LIMIT = limit
         cache_data = load_cache_data()
-        cache_data["api_key"] = api_key
+        cache_data["iterations_limit"] = limit
         save_cache_data(cache_data)
-        os.environ["OPENAI_API_KEY"] = api_key
+        return True
     except Exception as e:
-        logging.debug(f"set_api_key:{e}")
-
-def get_api_key():
-    """
-    :return: api key if set, else "Not Set"
-    """
-    return load_cache_data().get("api_key", "Not Set")
+        logger.debug(f"set_iterations_limit error: {e}")
+        return False
 
 def setup_environment() -> dict:
     """

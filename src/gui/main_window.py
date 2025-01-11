@@ -70,10 +70,10 @@ class ProofVerificationGUI(QMainWindow):
             self.toggle_dark_mode(dark_mode)
             iterations_limit = cache_data.get("iterations_limit", common.get_iterations_limit())
             common.set_iterations_limit(iterations_limit)
-            api_key = cache_data.get("api_key", "")
+            api_key = self.api.get_api_key()
             logging.debug(f"restore_configuration: {api_key}")
             if api_key:
-                common.set_api_key(api_key)
+                self.api.set_api_key(api_key, on_restore=True)
             else:
                 if "OPENAI_API_KEY" in os.environ:
                     del os.environ["OPENAI_API_KEY"]
@@ -205,17 +205,15 @@ class ProofVerificationGUI(QMainWindow):
         self.api.proof_result.connect(self.display_result)
         self.api.update_status.connect(self.update_status)
 
-    def configure_setting(self, title, label, cache_key, default_value, is_number=False, min_value=None, max_value=None, env_var=None):
+    def configure_setting(self, title, label, default_value, cache_key, min_value=None, max_value=None):
         """
         Generic method to configure a setting via a dialog, save it to the cache, and optionally update an environment variable.
         :param title: Title of the dialog window
         :param label: Label text for the input field
         :param cache_key: The key in the cache to update
         :param default_value: The default value if the cache does not contain the key
-        :param is_number: Whether the input is numeric
         :param min_value: Minimum value for numeric inputs (optional)
         :param max_value: Maximum value for numeric inputs (optional)
-        :param env_var: Name of the environment variable to update (optional)
         """
         if self.status in ["Active", "Paused"]:
             QMessageBox.warning(
@@ -225,35 +223,29 @@ class ProofVerificationGUI(QMainWindow):
                 "Retry when the status of program is stopped or inactive."
             )
             return
-
         try:
             success = False
-            cache_data = common.load_cache_data()
-            new_value = cache_data.get(cache_key, default_value)
             dialog = QInputDialog(self)
             dialog.setWindowTitle(f"Set {title}")
             dialog.setLabelText(label)
             dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-            if is_number:
-                dialog.setIntRange(min_value, max_value)
-                dialog.setIntValue(int(new_value))
-                if dialog.exec_() == QInputDialog.Accepted:
-                    new_value = dialog.intValue()
-                    success = True
-            else:
-                dialog.setTextValue(new_value)
-                if dialog.exec_() == QInputDialog.Accepted:
-                    new_value = dialog.textValue().strip()
-                    if not new_value:
-                        QMessageBox.critical(self, "title", "OpenAI API key cannot be an empty string.")
-                    success = bool(new_value)
-            if not success:
-                return
-            cache_data[cache_key] = new_value
-            common.save_cache_data(cache_data)
-            if env_var:
-                os.environ[env_var] = new_value
-            QMessageBox.information(self, title, f"{title} updated successfully.")
+            match cache_key:
+                case "iterations_limit":
+                    dialog.setIntRange(min_value, max_value)
+                    dialog.setIntValue(int(default_value))
+                    if dialog.exec_() == QInputDialog.Accepted:
+                        success = common.set_iterations_limit(dialog.intValue())
+                case "api_key":
+                    dialog.setTextValue(default_value)
+                    if dialog.exec_() == QInputDialog.Accepted:
+                        api_key = dialog.textValue().strip()
+                        if not api_key:
+                            QMessageBox.critical(self, "title", "OpenAI API key cannot be an empty string.")
+                        success = self.api.set_api_key(api_key)
+                        if not success:
+                            QMessageBox.critical(self, "Invalid API Key", "The provided API key is invalid. Please try again.")
+            if success:
+                QMessageBox.information(self, title, f"{title} updated successfully.")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"An error occurred while updating {title}: {e}")
 
@@ -266,7 +258,6 @@ class ProofVerificationGUI(QMainWindow):
             label="Enter the maximum number of iterations:",
             cache_key="iterations_limit",
             default_value=common.get_iterations_limit(),
-            is_number=True,
             min_value=1,
             max_value=1000
         )
@@ -279,9 +270,7 @@ class ProofVerificationGUI(QMainWindow):
             title="API Key",
             label="Enter your API key:",
             cache_key="api_key",
-            default_value="",
-            is_number=False,
-            env_var="OPENAI_API_KEY"
+            default_value=self.api.get_api_key(),
         )
 
     def show_contact_info(self):

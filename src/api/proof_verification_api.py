@@ -306,6 +306,52 @@ class ProofVerificationAPI(QObject):
         except Exception as e:
             return f"Error during proof refinement: {e}"
 
+    def validate_api_key(self, api_key):
+        """
+        Validates the given OpenAI API key by making a test API call.
+        Args:
+            api_key (str): The API key to validate.
+        Returns:
+            bool: True if the API key is valid, False otherwise.
+        """
+        try:
+            openai.api_key = api_key
+            openai.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": "Hello"}],
+                max_tokens=1
+            )
+            return True
+        except openai.AuthenticationError:
+            return False
+        except Exception as e:
+            logging.debug(f"Unexpected error during API key validation: {e}")
+            return False
+
+    def set_api_key(self, api_key: str, on_restore: bool = False):
+        """
+        Sets the API key in the configuration cache and as an environment variable.
+        :param on_restore: flag to determine if the function is called from restore configuration function.
+        :param api_key: The API key to be saved.
+        """
+        try:
+            if not on_restore and not self.validate_api_key(api_key):
+                return False
+            cache_data = common.load_cache_data()
+            cache_data["api_key"] = api_key
+            common.save_cache_data(cache_data)
+            os.environ["OPENAI_API_KEY"] = api_key
+            return True
+        except Exception as e:
+            logging.debug(f"set_api_key:{e}")
+            return False
+
+    def get_api_key(self):
+        """
+        :return: api key if set, else "Not Set"
+        """
+        return common.load_cache_data().get("api_key", "")
+
     @staticmethod
     def get_agda_example():
         """ Provides an example to the API. """

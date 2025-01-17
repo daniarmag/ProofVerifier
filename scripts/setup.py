@@ -25,21 +25,18 @@ def install_haskell():
 
 
 def install_agda():
-    """Installs Agda via Cabal."""
     print("Installing Agda...")
     subprocess.run(["cabal", "update"], check=True)
     subprocess.run(["cabal", "install", "Agda"], check=True)
 
 
 def install_dependencies():
-    """Installs required dependencies."""
     print("Installing dependencies...")
     if os.name == 'posix':
         subprocess.run(["sudo", "apt-get", "install", "-y", "zlib1g-dev", "libncurses5-dev", "git"], check=True)
 
 
 def check_agda():
-    """Checks if Agda is installed."""
     try:
         subprocess.run(["agda", "--version"], check=True, stdout=subprocess.PIPE)
         print("Agda is already installed.")
@@ -50,7 +47,6 @@ def check_agda():
 
 
 def check_pyinstaller():
-    """Checks if PyInstaller is installed."""
     try:
         subprocess.run(["pyinstaller", "--version"], check=True, stdout=subprocess.PIPE)
         print("PyInstaller is already installed.")
@@ -62,7 +58,6 @@ def check_pyinstaller():
 
 
 def check_git():
-    """Checks if Git is installed."""
     try:
         subprocess.run(["git", "--version"], check=True, stdout=subprocess.PIPE)
         print("Git is already installed.")
@@ -77,7 +72,6 @@ def check_git():
 
 
 def clone_github_repo(repo_url, clone_dir):
-    """Clones a GitHub repository to the specified directory."""
     if not os.path.exists(clone_dir):
         print(f"Cloning GitHub repository from {repo_url}...")
         subprocess.run(["git", "clone", repo_url, clone_dir], check=True)
@@ -86,17 +80,13 @@ def clone_github_repo(repo_url, clone_dir):
 
 
 def build_application_with_spec(spec_file):
-    """Builds the application using PyInstaller with a specified spec file."""
     print(f"Building application with spec file: {spec_file}...")
     subprocess.run(["pyinstaller", spec_file], check=True)
 
 
 def main():
-    """Main setup function."""
     check_git()
-
-    # GitHub repository URL and clone directory
-    repo_url = "https://github.com/your-username/your-repo.git"
+    repo_url = "https://github.com/daniarmag/ProofVerifier.git"
     clone_dir = "cloned_repo"
 
     clone_github_repo(repo_url, clone_dir)
@@ -109,7 +99,7 @@ def main():
         install_agda()
 
     check_pyinstaller()
-    spec_file = os.path.join(os.getcwd(), "ProofVerifier.spec")
+    spec_file = os.path.join(os.getcwd(), "files/ProofVerifier.spec")
     if not os.path.exists(spec_file):
         print(f"Error: Spec file '{spec_file}' not found.")
         sys.exit(1)

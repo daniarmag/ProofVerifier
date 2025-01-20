@@ -124,7 +124,7 @@ def main():
     clone_github_repo(repo_url, clone_dir)
     os.chdir(clone_dir)
 
-    if not check_agda(clone_dir):
+    if not check_agda():
         if os.name == 'posix':
             install_dependencies()
         install_haskell()
@@ -132,7 +132,7 @@ def main():
     check_and_remove_pathlib()
     check_pyinstaller()
     spec_file = os.path.join(os.getcwd(), "files/ProofVerifier.spec")
-    adjust_spec_file(spec_file, os.path.join(os.getcwd(), "../src/main.py"))
+    adjust_spec_file(spec_file, os.path.join(os.getcwd(), "/src/main.py"))
     if not os.path.exists(spec_file):
         print(f"Error: Spec file '{spec_file}' not found.")
         sys.exit(1)

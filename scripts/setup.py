@@ -111,7 +111,7 @@ def build_application_with_spec(spec_file):
 def adjust_spec_file(spec_file, main_script_path):
     with open(spec_file, 'r') as file:
         content = file.read()
-    updated_content = content.replace('src/main.py', main_script_path)
+    updated_content = content.replace('SPEC_REPLACE_STR', main_script_path)
     with open(spec_file, 'w') as file:
         file.write(updated_content)
     print(f"Updated .spec file to use path: {main_script_path}")

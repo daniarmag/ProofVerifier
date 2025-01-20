@@ -60,7 +60,6 @@ def check_agda(repo_dir):
 
 def check_pyinstaller():
     try:
-        check_and_remove_pathlib()
         subprocess.run(["pyinstaller", "--version"], check=True, stdout=subprocess.PIPE)
         print("PyInstaller is already installed.")
         return True
@@ -120,6 +119,7 @@ def main():
             install_dependencies()
         install_haskell()
         install_agda(clone_dir)
+    check_and_remove_pathlib()
     check_pyinstaller()
     spec_file = os.path.join(os.getcwd(), "files/ProofVerifier.spec")
     if not os.path.exists(spec_file):

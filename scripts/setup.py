@@ -1,7 +1,7 @@
 import os
 import subprocess
 import sys
-import winreg
+import shutil
 
 def install_haskell():
     """Installs Haskell via GHCup."""

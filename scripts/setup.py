@@ -116,6 +116,15 @@ def adjust_spec_file(spec_file, main_script_path):
         file.write(updated_content)
     print(f"Updated .spec file to use path: {main_script_path}")
 
+def validate_spec_and_script(spec_file, script_path):
+    """Validates that the .spec file and main script exist."""
+    if not os.path.exists(spec_file):
+        print(f"Error: Spec file '{spec_file}' not found.")
+        sys.exit(1)
+    if not os.path.exists(script_path):
+        print(f"Error: Script file '{script_path}' not found. Please verify the repository structure.")
+        sys.exit(1)
+
 def main():
     check_git()
     repo_url = "https://github.com/daniarmag/ProofVerifier.git"
@@ -132,10 +141,8 @@ def main():
     check_and_remove_pathlib()
     check_pyinstaller()
     spec_file = os.path.join(os.getcwd(), "files/ProofVerifier.spec")
-    adjust_spec_file(spec_file, os.path.join(os.getcwd(), "/src/main.py"))
-    if not os.path.exists(spec_file):
-        print(f"Error: Spec file '{spec_file}' not found.")
-        sys.exit(1)
+    script_path = os.path.abspath(os.path.join(os.getcwd(), "src/main.py"))
+    validate_spec_and_script(spec_file, script_path)
     build_application_with_spec(spec_file)
 
 if __name__ == "__main__":

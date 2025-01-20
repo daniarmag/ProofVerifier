@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import winreg
 
 def install_haskell():
     """Installs Haskell via GHCup."""
@@ -23,11 +24,51 @@ def install_haskell():
         )
         subprocess.run(["sh"], check=True)
 
+def add_to_path(directory):
+    """Adds a directory to the PATH environment variable."""
+    print(f"Adding {directory} to PATH...")
+    if os.name == 'nt':
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as key:
+                try:
+                    current_path, _ = winreg.QueryValueEx(key, "Path")
+                    if directory not in current_path:
+                        new_path = current_path + ";" + directory
+                        winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, new_path)
+                        print(f"{directory} added to PATH. Restart your terminal or system for changes to take effect.")
+                    else:
+                        print(f"{directory} is already in PATH.")
+                except FileNotFoundError:
+                    # If Path doesn't exist yet
+                    winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, directory)
+                    print(f"PATH created and {directory} added. Restart your terminal or system for changes to take effect.")
+        except ImportError:
+            print(f"Failed to update PATH on Windows. Please add {directory} to system path manually.")
+    else:
+        shell = os.environ.get("SHELL", "")
+        profile_files = [os.path.expanduser("~/.bashrc"), os.path.expanduser("~/.zshrc"), os.path.expanduser("~/.profile")]
+        updated = False
+        for profile in profile_files:
+            if os.path.exists(profile):
+                with open(profile, "r") as file:
+                    content = file.read()
+                if directory not in content:
+                    with open(profile, "a") as file:
+                        file.write(f'\n# Add Agda to PATH\nexport PATH="{directory}:$PATH"\n')
+                    updated = True
+        if updated:
+            print(f"{directory} added to PATH. Restart your terminal or source your shell profile for changes to take effect.")
+        else:
+            print(f"{directory} is already in PATH.")
 
 def install_agda():
     print("Installing Agda...")
     subprocess.run(["cabal", "update"], check=True)
-    subprocess.run(["cabal", "install", "Agda"], check=True)
+    subprocess.run(["cabal", "install", "Agda", "--overwrite-policy=always"], check=True)
+    agda_path = os.path.join("C:\\cabal\\bin", "agda.exe")
+    if os.path.exists(agda_path):
+        add_to_path(os.path.dirname(agda_path))
+        print("Agda installation complete and added to PATH.")
 
 
 def install_dependencies():
@@ -37,12 +78,18 @@ def install_dependencies():
 
 
 def check_agda():
+    """Checks if Agda is installed and accessible."""
     try:
         subprocess.run(["agda", "--version"], check=True, stdout=subprocess.PIPE)
-        print("Agda is already installed.")
+        print("Agda is already installed and accessible.")
         return True
     except FileNotFoundError:
-        print("Agda is not installed.")
+        agda_path = os.path.join("C:\\cabal\\bin", "agda.exe")
+        if os.path.exists(agda_path):
+            print(f"Agda found at {agda_path}. Adding to PATH...")
+            add_to_path(os.path.dirname(agda_path))
+            return True
+        print("Agda is not installed or not found.")
         return False
 
 

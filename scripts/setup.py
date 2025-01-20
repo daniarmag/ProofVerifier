@@ -24,72 +24,39 @@ def install_haskell():
         )
         subprocess.run(["sh"], check=True)
 
-def add_to_path(directory):
-    """Adds a directory to the PATH environment variable."""
-    print(f"Adding {directory} to PATH...")
-    if os.name == 'nt':
-        try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as key:
-                try:
-                    current_path, _ = winreg.QueryValueEx(key, "Path")
-                    if directory not in current_path:
-                        new_path = current_path + ";" + directory
-                        winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, new_path)
-                        print(f"{directory} added to PATH. Restart your terminal or system for changes to take effect.")
-                    else:
-                        print(f"{directory} is already in PATH.")
-                except FileNotFoundError:
-                    # If Path doesn't exist yet
-                    winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, directory)
-                    print(f"PATH created and {directory} added. Restart your terminal or system for changes to take effect.")
-        except ImportError:
-            print(f"Failed to update PATH on Windows. Please add {directory} to system path manually.")
-    else:
-        shell = os.environ.get("SHELL", "")
-        profile_files = [os.path.expanduser("~/.bashrc"), os.path.expanduser("~/.zshrc"), os.path.expanduser("~/.profile")]
-        updated = False
-        for profile in profile_files:
-            if os.path.exists(profile):
-                with open(profile, "r") as file:
-                    content = file.read()
-                if directory not in content:
-                    with open(profile, "a") as file:
-                        file.write(f'\n# Add Agda to PATH\nexport PATH="{directory}:$PATH"\n')
-                    updated = True
-        if updated:
-            print(f"{directory} added to PATH. Restart your terminal or source your shell profile for changes to take effect.")
-        else:
-            print(f"{directory} is already in PATH.")
-
-def install_agda():
+def install_agda(clone_dir):
     print("Installing Agda...")
     subprocess.run(["cabal", "update"], check=True)
     subprocess.run(["cabal", "install", "Agda", "--overwrite-policy=always"], check=True)
     agda_path = os.path.join("C:\\cabal\\bin", "agda.exe")
     if os.path.exists(agda_path):
-        add_to_path(os.path.dirname(agda_path))
-        print("Agda installation complete and added to PATH.")
-
+        print(f"Agda found at {agda_path}.")
+        copy_agda_to_repo(agda_path, repo_dir)
 
 def install_dependencies():
     print("Installing dependencies...")
     if os.name == 'posix':
         subprocess.run(["sudo", "apt-get", "install", "-y", "zlib1g-dev", "libncurses5-dev", "git"], check=True)
 
+def copy_agda_to_repo(agda_path, repo_dir):
+    """Copies the Agda directory to the ProofVerifier repo."""
+    destination = os.path.join(repo_dir, "agda_bin")
+    if not os.path.exists(destination):
+        print(f"Copying Agda from {agda_path} to {destination}...")
+        shutil.copytree(agda_path, destination)
+        print("Agda successfully copied.")
+    else:
+        print("Agda already exists in the repository. Skipping copy.")
 
-def check_agda():
+def check_agda(repo_dir):
     """Checks if Agda is installed and accessible."""
-    try:
-        subprocess.run(["agda", "--version"], check=True, stdout=subprocess.PIPE)
-        print("Agda is already installed and accessible.")
+    agda_path = os.path.join("C:\\cabal\\bin")
+    if os.path.exists(os.path.join(agda_path, "agda.exe")):
+        print(f"Agda found at {agda_path}.")
+        copy_agda_to_repo(agda_path, repo_dir)
         return True
-    except FileNotFoundError:
-        agda_path = os.path.join("C:\\cabal\\bin", "agda.exe")
-        if os.path.exists(agda_path):
-            print(f"Agda found at {agda_path}. Adding to PATH...")
-            add_to_path(os.path.dirname(agda_path))
-            return True
-        print("Agda is not installed or not found.")
+    else:
+        print("Agda is not installed or not found in C:\\cabal\\bin.")
         return False
 
 
@@ -139,11 +106,11 @@ def main():
     clone_github_repo(repo_url, clone_dir)
     os.chdir(clone_dir)
 
-    if not check_agda():
+    if not check_agda(clone_dir):
         if os.name == 'posix':
             install_dependencies()
         install_haskell()
-        install_agda()
+        install_agda(clone_dir)
 
     check_pyinstaller()
     spec_file = os.path.join(os.getcwd(), "files/ProofVerifier.spec")

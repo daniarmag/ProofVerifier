@@ -48,12 +48,13 @@ def copy_agda_to_repo(agda_path):
     else:
         print("Agda already exists in the repository. Skipping copy.")
 
-def check_agda(repo_dir):
+def check_agda():
     """Checks if Agda is installed and accessible."""
-    agda_path = os.path.join("C:\\cabal\\bin")
-    if os.path.exists(os.path.join(agda_path, "agda.exe")):
+    cabal_path = "C:\\cabal"
+    agda_path = os.path.join(cabal_path, "bin", "agda.exe")
+    if os.path.exists(agda_path):
         print(f"Agda found at {agda_path}.")
-        copy_agda_to_repo(agda_path, repo_dir)
+        copy_agda_to_repo(cabal_path)
         return True
     else:
         print("Agda is not installed or not found in C:\\cabal\\bin.")

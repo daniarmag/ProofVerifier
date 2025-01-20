@@ -39,7 +39,6 @@ def install_dependencies():
         subprocess.run(["sudo", "apt-get", "install", "-y", "zlib1g-dev", "libncurses5-dev", "git"], check=True)
 
 def copy_agda_to_repo(agda_path, repo_dir):
-    """Copies the Agda directory to the ProofVerifier repo."""
     destination = os.path.join(repo_dir, "agda_bin")
     if not os.path.exists(destination):
         print(f"Copying Agda from {agda_path} to {destination}...")
@@ -59,7 +58,6 @@ def check_agda(repo_dir):
         print("Agda is not installed or not found in C:\\cabal\\bin.")
         return False
 
-
 def check_pyinstaller():
     try:
         subprocess.run(["pyinstaller", "--version"], check=True, stdout=subprocess.PIPE)
@@ -69,7 +67,6 @@ def check_pyinstaller():
         print("PyInstaller is not installed. Installing now...")
         subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)
         return True
-
 
 def check_git():
     try:
@@ -84,6 +81,19 @@ def check_git():
             print("Please install Git manually from https://git-scm.com/downloads.")
             sys.exit(1)
 
+def check_and_remove_pathlib():
+    """Checks and removes the outdated pathlib package if installed."""
+    print("Checking for incompatible 'pathlib' package...")
+    try:
+        result = subprocess.run([sys.executable, "-m", "pip", "show", "pathlib"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if "Name: pathlib" in result.stdout:
+            print("'pathlib' package detected. Removing it to avoid conflicts with PyInstaller...")
+            subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "pathlib"], check=True)
+            print("'pathlib' package removed successfully.")
+        else:
+            print("'pathlib' package is not installed. Proceeding...")
+    except subprocess.CalledProcessError as e:
+        print(f"Error while checking/removing 'pathlib': {e}")
 
 def clone_github_repo(repo_url, clone_dir):
     if not os.path.exists(clone_dir):
@@ -92,11 +102,10 @@ def clone_github_repo(repo_url, clone_dir):
     else:
         print(f"Directory {clone_dir} already exists. Skipping clone.")
 
-
 def build_application_with_spec(spec_file):
     print(f"Building application with spec file: {spec_file}...")
+    check_and_remove_pathlib()
     subprocess.run(["pyinstaller", spec_file], check=True)
-
 
 def main():
     check_git()

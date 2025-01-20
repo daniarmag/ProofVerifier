@@ -117,7 +117,6 @@ def adjust_spec_file(spec_file, main_script_path):
     print(f"Updated .spec file to use path: {main_script_path}")
 
 def validate_spec_and_script(spec_file, script_path):
-    """Validates that the .spec file and main script exist."""
     if not os.path.exists(spec_file):
         print(f"Error: Spec file '{spec_file}' not found.")
         sys.exit(1)
@@ -140,7 +139,7 @@ def main():
         install_agda()
     check_and_remove_pathlib()
     check_pyinstaller()
-    spec_file = os.path.join(os.getcwd(), "files/ProofVerifier.spec")
+    spec_file = os.path.join(os.getcwd(), "files", "ProofVerifier.spec")
     script_path = os.path.abspath(os.path.join(os.getcwd(), "src/main.py"))
     validate_spec_and_script(spec_file, script_path)
     build_application_with_spec(spec_file)

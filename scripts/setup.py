@@ -24,22 +24,23 @@ def install_haskell():
         )
         subprocess.run(["sh"], check=True)
 
-def install_agda(clone_dir):
+def install_agda():
     print("Installing Agda...")
     subprocess.run(["cabal", "update"], check=True)
     subprocess.run(["cabal", "install", "Agda", "--overwrite-policy=always"], check=True)
-    agda_path = os.path.join("C:\\cabal\\bin", "agda.exe")
+    cabal_path = "C:\\cabal"
+    agda_path = os.path.join(cabal_path, "bin", "agda.exe")
     if os.path.exists(agda_path):
         print(f"Agda found at {agda_path}.")
-        copy_agda_to_repo(agda_path, repo_dir)
+        copy_agda_to_repo(cabal_path)
 
 def install_dependencies():
     print("Installing dependencies...")
     if os.name == 'posix':
         subprocess.run(["sudo", "apt-get", "install", "-y", "zlib1g-dev", "libncurses5-dev", "git"], check=True)
 
-def copy_agda_to_repo(agda_path, repo_dir):
-    destination = os.path.join(repo_dir, "agda_bin")
+def copy_agda_to_repo(agda_path):
+    destination = os.path.join(os.getcwd(), "Agda")
     if not os.path.exists(destination):
         print(f"Copying Agda from {agda_path} to {destination}...")
         shutil.copytree(agda_path, destination)
@@ -106,6 +107,14 @@ def build_application_with_spec(spec_file):
     print(f"Building application with spec file: {spec_file}...")
     subprocess.run(["pyinstaller", spec_file], check=True)
 
+def adjust_spec_file(spec_file, main_script_path):
+    with open(spec_file, 'r') as file:
+        content = file.read()
+    updated_content = content.replace('src/main.py', main_script_path)
+    with open(spec_file, 'w') as file:
+        file.write(updated_content)
+    print(f"Updated .spec file to use path: {main_script_path}")
+
 def main():
     check_git()
     repo_url = "https://github.com/daniarmag/ProofVerifier.git"
@@ -118,10 +127,11 @@ def main():
         if os.name == 'posix':
             install_dependencies()
         install_haskell()
-        install_agda(clone_dir)
+        install_agda()
     check_and_remove_pathlib()
     check_pyinstaller()
     spec_file = os.path.join(os.getcwd(), "files/ProofVerifier.spec")
+    adjust_spec_file(spec_file, os.path.join(os.getcwd(), "../src/main.py"))
     if not os.path.exists(spec_file):
         print(f"Error: Spec file '{spec_file}' not found.")
         sys.exit(1)

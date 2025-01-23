@@ -143,7 +143,7 @@ def main():
         install_agda()
     check_and_remove_pathlib()
     check_pyinstaller()
-    spec_file = os.path.join(os.getcwd(), "files", "ProofVerifier.spec")
+    spec_file = os.path.join(os.getcwd(), "ProofVerifier.spec")
     script_path = os.path.abspath(os.path.join(os.getcwd(), "src/main.py"))
     # adjust_spec_file(spec_file, script_path)
     validate_spec_and_script(spec_file, script_path)

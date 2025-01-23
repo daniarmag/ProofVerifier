@@ -111,9 +111,9 @@ def build_application_with_spec(spec_file):
 def adjust_spec_file(spec_file, main_script_path):
     with open(spec_file, 'r') as file:
         content = file.read()
-    print("1: " + os.getcwd())
-    print("2: " +spec_file)
-    print("3: " +main_script_path)
+    print(os.getcwd())
+    print(spec_file)
+    print(main_script_path)
     updated_content = content.replace('SPEC_REPLACE_STR', main_script_path)
     with open(spec_file, 'w') as file:
         file.write(updated_content)
@@ -144,6 +144,7 @@ def main():
     check_pyinstaller()
     spec_file = os.path.join(os.getcwd(), "files", "ProofVerifier.spec")
     script_path = os.path.abspath(os.path.join(os.getcwd(), "src/main.py"))
+    adjust_spec_file(spec_file, script_path)
     validate_spec_and_script(spec_file, script_path)
     build_application_with_spec(spec_file)
 

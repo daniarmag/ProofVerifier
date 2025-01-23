@@ -4,7 +4,7 @@ block_cipher = None
 
 a = Analysis(
     [SPEC_REPLACE_STR],
-    pathex=[],
+    pathex=[SPEC_REPLACE_PATHEX],
     binaries=[],
     datas=[
         ('files', 'files'),  # Include 'files' folder

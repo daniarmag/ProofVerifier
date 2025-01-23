@@ -114,8 +114,8 @@ def adjust_spec_file(spec_file, main_script_path):
     print(os.getcwd())
     print(spec_file)
     print(main_script_path)
-    updated_content = content.replace('"SPEC_REPLACE_STR"', main_script_path)
-    updated_content = updated_content.replace('"SPEC_REPLACE_PATHEX"', os.getcwd())
+    updated_content = content.replace('SPEC_REPLACE_STR', f'"{main_script_path}"')
+    updated_content = updated_content.replace('SPEC_REPLACE_PATHEX', f'"{os.getcwd()}"')
     with open(spec_file, 'w') as file:
         file.write(updated_content)
     print(f"Updated .spec file to use path: {main_script_path}")

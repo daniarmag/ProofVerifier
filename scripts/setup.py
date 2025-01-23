@@ -108,18 +108,6 @@ def build_application_with_spec(spec_file):
     print(f"Building application with spec file: {spec_file}...")
     subprocess.run(["pyinstaller", spec_file], check=True)
 
-def adjust_spec_file(spec_file, main_script_path):
-    with open(spec_file, 'r') as file:
-        content = file.read()
-    print(os.getcwd())
-    print(spec_file)
-    print(main_script_path)
-    updated_content = content.replace('SPEC_REPLACE_STR', f'"{main_script_path}"')
-    updated_content = updated_content.replace('SPEC_REPLACE_PATHEX', f'"{os.getcwd()}"')
-    with open(spec_file, 'w') as file:
-        file.write(updated_content)
-    print(f"Updated .spec file to use path: {main_script_path}")
-
 def validate_spec_and_script(spec_file, script_path):
     if not os.path.exists(spec_file):
         print(f"Error: Spec file '{spec_file}' not found.")
@@ -128,14 +116,32 @@ def validate_spec_and_script(spec_file, script_path):
         print(f"Error: Script file '{script_path}' not found. Please verify the repository structure.")
         sys.exit(1)
 
+def setup_virtualenv(repo_dir):
+    """Sets up a virtual environment and installs dependencies."""
+    venv_path = os.path.join(repo_dir, "venv")
+    if not os.path.exists(venv_path):
+        print("Virtual environment not found. Creating one...")
+        subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
+        print(f"Virtual environment created at {venv_path}.")
+    else:
+        print("Virtual environment already exists.")
+    # Activate the virtual environment and install requirements
+    activate_script = os.path.join(venv_path, "Scripts", "activate") if os.name == 'nt' else os.path.join(venv_path, "bin", "activate")
+    requirements_path = os.path.join(repo_dir, "requirements.txt")
+    if os.path.exists(requirements_path):
+        print("Installing dependencies from requirements.txt...")
+        subprocess.run(f"{activate_script} && pip install -r {requirements_path}", shell=True, check=True)
+        print("Dependencies installed successfully.")
+    else:
+        print("requirements.txt not found. Ensure it exists in the repository.")
+        sys.exit(1)
+
 def main():
     check_git()
     repo_url = "https://github.com/daniarmag/ProofVerifier.git"
-    clone_dir = "cloned_repo"
-
+    clone_dir = "ProofVerifier"
     clone_github_repo(repo_url, clone_dir)
     os.chdir(clone_dir)
-
     if not check_agda():
         if os.name == 'posix':
             install_dependencies()
@@ -145,7 +151,7 @@ def main():
     check_pyinstaller()
     spec_file = os.path.join(os.getcwd(), "ProofVerifier.spec")
     script_path = os.path.abspath(os.path.join(os.getcwd(), "src/main.py"))
-    # adjust_spec_file(spec_file, script_path)
+    setup_virtualenv(clone_dir)
     validate_spec_and_script(spec_file, script_path)
     build_application_with_spec(spec_file)
 

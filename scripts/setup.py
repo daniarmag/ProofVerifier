@@ -145,7 +145,7 @@ def main():
     check_pyinstaller()
     spec_file = os.path.join(os.getcwd(), "files", "ProofVerifier.spec")
     script_path = os.path.abspath(os.path.join(os.getcwd(), "src/main.py"))
-    adjust_spec_file(spec_file, script_path)
+    # adjust_spec_file(spec_file, script_path)
     validate_spec_and_script(spec_file, script_path)
     build_application_with_spec(spec_file)
 

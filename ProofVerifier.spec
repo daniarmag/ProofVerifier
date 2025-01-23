@@ -3,8 +3,8 @@
 block_cipher = None
 
 a = Analysis(
-    [SPEC_REPLACE_STR],
-    pathex=[SPEC_REPLACE_PATHEX],
+    ['src\\main.py'],
+    pathex=[],
     binaries=[],
     datas=[
         ('files', 'files'),  # Include 'files' folder

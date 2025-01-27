@@ -1,14 +1,64 @@
+# ProofVerifier README
 
-*Download ProofVerifier executable from here: https://drive.google.com/drive/folders/1B8zW-dO9rcprNjXHAU0rktjUy5oluiBj?usp=drive_link*
+Welcome to the **ProofVerifier** tool! This document will guide you through the installation and setup process to ensure everything works seamlessly.
 
-*User Guide Help: https://github.com/daniarmag/ProofVerifier/tree/main/files*
+## Step 1: Install Agda
 
+Agda is a dependently typed functional programming language and proof assistant. Follow these instructions to install it:
 
-**Our System's API**
+1. Visit the official Agda installation guide: [Agda Installation Instructions](https://agda.readthedocs.io/en/latest/getting-started/installation.html).
+2. Follow the steps specific to your system:
+   - Install GHC and Cabal (Cabal executable can usually be found in `C:\ghcup\bin\cabal.exe`).
+   - Use `cabal install Agda` to install Agda (Agda executable can usually be found in `C:\cabal\bin\agda.exe`).
+3. Verify the installation by running the following command in your terminal:
+   ```bash
+   cd <AGDA EXECUTABLE FOLDER HERE>
+   agda --version
+   ```
+   You should see the version number if Agda is installed correctly.
 
-Our system features an API designed to bridge the gap between natural language mathematical statements and formal verification processes. The API serves as an interface that allows interaction between AI-driven proof generation and formal verification methods, aiming to streamline the iterative process of proof generation and validation. It is structured to facilitate seamless communication between ChatGPT and the Agda-based formal verification system, ensuring that proofs are generated correctly.
-The API accepts natural language input, translating it into a semi-formal proof structure that is subsequently validated by Agda. The system is designed for iterative refinement, where failed proofs are analyzed, and feedback is provided to the proof generation module, enabling continuous improvement until convergence is achieved. This architecture allows for efficient proof discovery and enhances the reliability of AI-generated mathematical proofs.
+---
 
-For any issues contact: 
-Daniel Armaganian - daniarmag@gmail.com
-Tzahi Bakal - Tzahi.Bakal@gmail.com
+## Step 2: Add Agda to the Windows Path
+
+To ensure that Agda is accessible from anywhere on your system:
+
+1. Open the **Start Menu** and search for Settings
+2. Select **System**
+3. In the **System** window, select **About**.
+4. Under **About**, find and select `Advanced system settings`.
+5. In the **System Properties** window, click the `Environment Variables` button.
+6. Under **System Variables**, find and select the `Path` variable, then click Edit.
+7. Click **New** and add the path to Agda's executable (e.g., `C:\cabal\bin\agda.exe`).
+8. Click **OK** to save the changes.
+9. Restart your terminal and verify Agda is in the path by typing:
+   ```bash
+   agda --version
+   ```
+
+---
+
+## Step 3: Download ProofVerifier Executable
+
+1. Download the **ProofVerifier** executable from the following link: [ProofVerifier Executable](https://drive.google.com/drive/folders/1B8zW-dO9rcprNjXHAU0rktjUy5oluiBj?usp=drive_link).
+2. Save the executable to a folder of your choice.
+
+---
+
+## Step 4: User Guide
+
+For detailed instructions on how to use **ProofVerifier**, refer to the user guide provided here: [ProofVerifier User Guide](https://github.com/daniarmag/ProofVerifier/tree/main/files).
+
+---
+
+## Support
+
+If you encounter any issues or have questions, please reach out:
+
+- **Daniel Armaganian**: [daniarmag@gmail.com](mailto\:daniarmag@gmail.com)
+- **Tzahi Bakal**: [Tzahi.Bakal@gmail.com](mailto\:Tzahi.Bakal@gmail.com)
+
+---
+
+Thank you for using ProofVerifier!
+

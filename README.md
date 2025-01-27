@@ -40,7 +40,7 @@ To ensure that Agda is accessible from anywhere on your system:
 
 ## Step 3: Download ProofVerifier Executable
 
-1. Download the **ProofVerifier** executable from the following link: [ProofVerifier Executable](https://drive.google.com/drive/folders/1B8zW-dO9rcprNjXHAU0rktjUy5oluiBj?usp=drive_link).
+1. Download **ProofVerifier.exe** file from the following link: [ProofVerifier Executable](https://drive.google.com/drive/folders/1B8zW-dO9rcprNjXHAU0rktjUy5oluiBj?usp=drive_link).
 2. Save the executable to a folder of your choice.
 
 ---

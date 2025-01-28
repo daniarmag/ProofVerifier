@@ -29,7 +29,7 @@ To ensure that Agda is accessible from anywhere on your system:
 4. Under **About**, find and select `Advanced system settings`.
 5. In the **System Properties** window, click the `Environment Variables` button.
 6. Under **System Variables**, find and select the `Path` variable, then click Edit.
-7. Click **New** and add the path to Agda's executable (e.g., `C:\cabal\bin\agda.exe`).
+7. Click **New** and add the path to Agda's executable (e.g., `C:\cabal\bin\` where agda.exe is in the folder).
 8. Click **OK** to save the changes.
 9. Restart your terminal and verify Agda is in the path by typing:
    ```bash

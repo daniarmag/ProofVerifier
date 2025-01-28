@@ -62,7 +62,7 @@ For detailed instructions on how to use **ProofVerifier**, refer to the user gui
 If you encounter any issues or have questions, please reach out:
 
 - **Daniel Armaganian**: [daniarmag@gmail.com](mailto\:daniarmag@gmail.com)
-- **Tzahi Bakal**: [Tzahi.Bakal@gmail.com](mailto\:Tzahi.Bakal@gmail.com)
+- **Tzahi Bakal**: [Tzahi.Bakal@gmail.com](mailto\:tzahi.bakal@gmail.com)
 
 ---
 

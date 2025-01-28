@@ -7,10 +7,16 @@ Welcome to the **ProofVerifier** tool! This document will guide you through the 
 Agda is a dependently typed functional programming language and proof assistant. Follow these instructions to install it:
 
 1. Visit the official Agda installation guide: [Agda Installation Instructions](https://agda.readthedocs.io/en/latest/getting-started/installation.html).
-2. Follow the steps specific to your system:
+   - We recommend following **Option 1: Install Agda as a Haskell Package**.
+   - Non windows users need to make sure to install `zlib and ncurses` dependecies.
+   ```bash
+   apt-get install zlib1g-dev libncurses5-dev
+   ```
+   - Windows users, can skip to **Install GHC and Cabal through GHCup**.
+3. Follow the steps specific to your system:
    - Install GHC and Cabal (Cabal executable can usually be found in `C:\ghcup\bin\cabal.exe`).
    - Use `cabal install Agda` to install Agda (Agda executable can usually be found in `C:\cabal\bin\agda.exe`).
-3. Verify the installation by running the following command in your terminal:
+4. Verify the installation by running the following command in your terminal:
    ```bash
    cd <AGDA EXECUTABLE FOLDER HERE>
    agda --version
@@ -29,7 +35,7 @@ To ensure that Agda is accessible from anywhere on your system:
 4. Under **About**, find and select `Advanced system settings`.
 5. In the **System Properties** window, click the `Environment Variables` button.
 6. Under **System Variables**, find and select the `Path` variable, then click Edit.
-7. Click **New** and add the path to Agda's executable (e.g., `C:\cabal\bin\` where agda.exe is in the folder).
+7. Click **New** and add the path to Agda's executable (e.g., `C:\cabal\bin\` - location of agda.exe file).
 8. Click **OK** to save the changes.
 9. Restart your terminal and verify Agda is in the path by typing:
    ```bash

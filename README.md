@@ -57,6 +57,9 @@ For detailed instructions on how to use **ProofVerifier**, refer to the user gui
 
 ---
 
+## Example Usage
+[![Watch the Video](https://img.youtube.com/vi/o29hpznlgQo/0.jpg)](https://www.youtube.com/watch?v=o29hpznlgQo)
+
 ## Support
 
 If you encounter any issues or have questions, please reach out:

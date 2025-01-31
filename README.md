@@ -8,15 +8,15 @@ Agda is a dependently typed functional programming language and proof assistant.
 
 1. Visit the official Agda installation guide: [Agda Installation Instructions](https://agda.readthedocs.io/en/latest/getting-started/installation.html).
    - We recommend following **Option 1: Install Agda as a Haskell Package**.
-   - Non windows users need to make sure to install `zlib and ncurses` dependecies.
+   - Non windows users need to make sure to install `zlib and ncurses` dependecies. For such cases, run this command in your terminal:
    ```bash
    apt-get install zlib1g-dev libncurses5-dev
    ```
    - Windows users, can skip to **Install GHC and Cabal through GHCup**.
-3. Follow the steps specific to your system:
+2. Follow the steps specific to your system:
    - Install GHC and Cabal (Cabal executable can usually be found in `C:\ghcup\bin\cabal.exe`).
    - Use `cabal install Agda` to install Agda (Agda executable can usually be found in `C:\cabal\bin\agda.exe`).
-4. Verify the installation by running the following command in your terminal:
+3. Verify the installation by running the following command in your terminal:
    ```bash
    cd <AGDA EXECUTABLE FOLDER HERE>
    agda --version

@@ -51,7 +51,7 @@ To ensure that Agda is accessible from anywhere on your system:
 
 ---
 
-## User Guide
+## Activating the Repoistory in Your IDE
 
 From your IDE:
 1. Clone the project repository from the terminal, using the repository URL

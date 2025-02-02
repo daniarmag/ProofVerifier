@@ -51,7 +51,18 @@ To ensure that Agda is accessible from anywhere on your system:
 
 ---
 
-## Step 4: User Guide
+## User Guide
+
+From your IDE:
+1. Clone the project repository from the terminal, using the repository URL
+2. Install required libraries from the terminal, by running the following command
+   ```bash
+   pip install -r requirements.txt
+   ```
+   
+---
+
+## User Guide
 
 For detailed instructions on how to use **ProofVerifier**, refer to the user guide provided here: [ProofVerifier User Guide](https://github.com/daniarmag/ProofVerifier/tree/main/files).
 

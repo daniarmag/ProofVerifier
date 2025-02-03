@@ -1,4 +1,4 @@
-# ProofVerifier README
+# ProofVerifier
 
 ## Table of Contents
 - [Introduction](#proofverifier-readme)

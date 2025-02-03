@@ -1,5 +1,15 @@
 # ProofVerifier README
 
+## Table of Contents
+- [Introduction](#proofverifier-readme)
+- [Step 1: Install Agda](#step-1-install-agda)
+- [Step 2: Add Agda to the Windows Path](#step-2-add-agda-to-the-windows-path)
+- [Step 3: Download ProofVerifier Executable](#step-3-download-proofverifier-executable)
+- [Activating the Repository in Your IDE](#activating-the-repository-in-your-ide)
+- [User Guide](#user-guide)
+- [Example Usage](#example-usage)
+- [Support](#support)
+
 Welcome to the **ProofVerifier** tool! This document will guide you through the installation and setup process to ensure everything works seamlessly.
 
 ## Step 1: Install Agda

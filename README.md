@@ -10,7 +10,11 @@
 - [Example Usage](#example-usage)
 - [Support](#support)
 
+---
+
 Welcome to the **ProofVerifier** tool! This document will guide you through the installation and setup process to ensure everything works seamlessly.
+- [For Phase A, click here](https://github.com/daniarmag/ProofVerifier/tree/main/docs/Phase%20A)
+- [For Phase B, click here](https://github.com/daniarmag/ProofVerifier/tree/main/docs/Phase%20B)
 
 ## Step 1: Install Agda
 
